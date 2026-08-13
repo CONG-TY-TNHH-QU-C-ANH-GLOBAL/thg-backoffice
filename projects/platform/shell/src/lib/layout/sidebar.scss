@@ -1,0 +1,235 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  width: var(--sidebar-w);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  padding: var(--s-3) var(--s-3) var(--s-2);
+  background: var(--bg-surface);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+:host(.rail) {
+  width: var(--sidebar-rail-w);
+  align-items: center;
+  padding-inline: var(--s-2);
+}
+
+/* Drawer: off-canvas until opened. */
+@include mobile {
+  :host {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--z-drawer);
+    width: min(280px, 82vw);
+    padding-bottom: max(var(--s-2), env(safe-area-inset-bottom));
+    transform: translateX(-100%);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--sh-lg);
+  }
+
+  :host(.open) {
+    transform: none;
+  }
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 34px;
+  padding-inline: 5px;
+  margin-bottom: var(--s-4);
+  border-radius: var(--r-md);
+
+  :host(.rail) & {
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--fg-invert);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.name {
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  @include truncate;
+}
+
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  width: 100%;
+}
+
+hr {
+  width: 100%;
+  height: 1px;
+  margin: var(--s-3) 0;
+  border: 0;
+  background: var(--line);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: 34px;
+  padding: 0 var(--s-2) 0 9px;
+  border-radius: var(--r-md);
+  color: var(--fg-muted);
+  font-size: var(--t-base);
+  font-weight: 500;
+  transition: background-color 0.14s ease, color 0.14s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--fg);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+  }
+
+  &--active {
+    background: var(--c-primary);
+    color: var(--fg-invert);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+    &:hover {
+      background: var(--c-primary-600);
+      color: var(--fg-invert);
+    }
+  }
+
+  :host(.rail) & {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  @include mobile {
+    height: 42px;
+  }
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  @include truncate;
+}
+
+.count {
+  flex: none;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--bg-active);
+  color: var(--fg-muted);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  line-height: 17px;
+  text-align: center;
+
+  .item--active & {
+    background: rgba(255, 255, 255, 0.2);
+    color: var(--fg-invert);
+  }
+}
+
+.toggle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: inherit;
+  opacity: 0.65;
+  transition: opacity 0.14s ease, background-color 0.14s ease;
+
+  &:hover {
+    opacity: 1;
+    background: rgba(11, 18, 32, 0.06);
+  }
+
+  .item--active &:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.children {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 2px 0 var(--s-2) 18px;
+  padding-left: 11px;
+  border-left: 1px solid var(--line);
+}
+
+.child {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 30px;
+  padding: 0 var(--s-2);
+  border-radius: var(--r-sm);
+  color: var(--fg-muted);
+  font-size: var(--t-sm);
+  transition: background-color 0.14s ease, color 0.14s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--fg);
+  }
+
+  &--active {
+    background: var(--c-primary-50);
+    color: var(--c-primary-700);
+    font-weight: 600;
+  }
+
+  &--empty {
+    height: auto;
+    padding: var(--s-1) var(--s-2);
+    color: var(--fg-subtle);
+    font-style: italic;
+  }
+
+  @include mobile {
+    height: 38px;
+  }
+}
+
+footer {
+  padding: var(--s-3) 9px var(--s-1);
+  color: var(--fg-subtle);
+  font-size: var(--t-xs);
+  line-height: 1.7;
+}

@@ -1,0 +1,44 @@
+@use 'mixins' as *;
+
+:host {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-app);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: var(--s-6);
+
+  @include below-desktop {
+    padding: var(--s-5);
+  }
+
+  @include mobile {
+    padding: var(--s-4) var(--s-3);
+    padding-bottom: calc(var(--s-8) + env(safe-area-inset-bottom));
+  }
+}
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-scrim);
+  background: var(--bg-scrim);
+  backdrop-filter: blur(2px);
+  animation: bo-fade 0.2s ease both;
+}
+
+@keyframes bo-fade {
+  from {
+    opacity: 0;
+  }
+}
