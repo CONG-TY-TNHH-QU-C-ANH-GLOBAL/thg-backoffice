@@ -11,7 +11,11 @@ import { Role } from '../access/rules/scope';
 
 /** What one persona gets when they open a capability. */
 export interface CapabilityPresentation {
-  /** Persona-facing name: 'Khách hàng tiềm năng' (head) vs 'Khách hàng của tôi' (member). */
+  /**
+   * Persona-facing name. The same capability is usually worded differently per
+   * scope — a unit-wide list vs "mine" — which is why the title lives on the
+   * presentation and not on the capability.
+   */
   title: string;
   icon?: string;
   load: () => Promise<Type<unknown>>;
@@ -35,8 +39,12 @@ export interface CapabilityDescriptor {
   icon: string;
   accent: Accent;
   /**
-   * Missing role ⇒ that persona does not see this capability at all.
-   * This is how a MEMBER loses "Phân công" without a single `if (role === …)`.
+   * Missing role ⇒ that persona does not see this capability at all — not in
+   * navigation, not in tabs, and the route guard refuses it.
+   *
+   * This is how a persona loses a whole surface without a single
+   * `if (role === …)` anywhere in the shell: the surface was never registered
+   * for them, so there is nothing to hide.
    */
   presentations: Partial<Record<Role, CapabilityPresentation>>;
   navigation?: NavigationContribution[];

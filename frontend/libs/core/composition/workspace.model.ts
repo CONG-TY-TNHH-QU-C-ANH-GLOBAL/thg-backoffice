@@ -3,13 +3,16 @@ import { CapabilityKey } from '../models/organization.model';
 import { Role } from '../access/rules/scope';
 
 /**
- * Role does not merely gate buttons — it selects an entirely different
- * workspace. Each persona answers a different question, so each gets its own
- * dashboard component and its own set of widgets:
+ * Scope does not merely gate buttons — it selects an entirely different
+ * workspace. Each persona opens the day with a different question, so each gets
+ * its own dashboard component and its own set of widgets:
  *
- *   SUPERADMIN      → "Công ty đang vận hành như thế nào?"
- *   DEPARTMENT_HEAD → "Phòng của tôi đang vận hành như thế nào?"
- *   MEMBER          → "Hôm nay tôi cần làm gì?"
+ *   organization-wide  → how is the whole organization running?
+ *   unit-wide          → how is my unit running?
+ *   self               → what do I need to do today?
+ *
+ * Collapsing these into one dashboard that hides widgets is the anti-pattern
+ * this registry exists to prevent.
  */
 export interface WorkspaceDescriptor {
   role: Role;

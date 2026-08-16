@@ -29,23 +29,23 @@ const MARKETING = dept('marketing', ['customers']);
 const CAPABILITIES: CapabilityDescriptor[] = [
   {
     key: 'customers',
-    title: 'Khách hàng',
+    title: 'Records',
     icon: 'users',
     accent: 'blue',
     presentations: {
-      SUPERADMIN: { title: 'Khách hàng', load: async () => class {} },
-      DEPARTMENT_HEAD: { title: 'Khách hàng tiềm năng', load: async () => class {} },
-      MEMBER: { title: 'Khách hàng của tôi', load: async () => class {} },
+      SUPERADMIN: { title: 'Records', load: async () => class {} },
+      DEPARTMENT_HEAD: { title: 'Unit records', load: async () => class {} },
+      MEMBER: { title: 'My records', load: async () => class {} },
     },
   },
   {
     key: 'assignment',
-    title: 'Phân công',
+    title: 'Assignment',
     icon: 'user-plus',
     accent: 'teal',
     presentations: {
-      SUPERADMIN: { title: 'Phân công', load: async () => class {} },
-      DEPARTMENT_HEAD: { title: 'Phân công', load: async () => class {} },
+      SUPERADMIN: { title: 'Assignment', load: async () => class {} },
+      DEPARTMENT_HEAD: { title: 'Assignment', load: async () => class {} },
     },
   },
 ];
@@ -117,10 +117,10 @@ describe('Capability presentation per persona', () => {
 
   it('titles the same capability differently per persona', async () => {
     const head = await setup(HEAD_SALES);
-    expect(head.presentationFor('customers')?.title).toBe('Khách hàng tiềm năng');
+    expect(head.presentationFor('customers')?.title).toBe('Unit records');
 
     const member = await setup(SALES_A);
-    expect(member.presentationFor('customers')?.title).toBe('Khách hàng của tôi');
+    expect(member.presentationFor('customers')?.title).toBe('My records');
   });
 
   it('returns nothing for a department the persona cannot enter', async () => {

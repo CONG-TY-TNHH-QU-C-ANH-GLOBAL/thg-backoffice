@@ -39,10 +39,10 @@ async function setup() {
       provideCapabilities([
         {
           key: 'customers',
-          title: 'Khách hàng',
+          title: 'Records',
           icon: 'users',
           accent: 'blue',
-          presentations: { DEPARTMENT_HEAD: { title: 'Khách hàng', load: async () => class {} } },
+          presentations: { DEPARTMENT_HEAD: { title: 'Records', load: async () => class {} } },
         },
       ]),
       {

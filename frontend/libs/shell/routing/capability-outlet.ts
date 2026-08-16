@@ -8,9 +8,10 @@ import { EmptyState, Skeleton } from '@bo/components';
 /**
  * Renders the surface this persona gets for the routed capability.
  *
- * A head opening `…/potential-customers` lands on the department pool; a member
- * on the same URL lands on their own customers. The route is shared, the
- * component is not — which is why neither page needs a role check inside it.
+ * Two personas opening the same `…/<capability-key>` URL land on two different
+ * components: one sees everything the unit holds, the other only their own.
+ * The route is shared, the component is not — which is why neither page needs a
+ * role check inside it.
  */
 @Component({
   selector: 'bo-capability-outlet',

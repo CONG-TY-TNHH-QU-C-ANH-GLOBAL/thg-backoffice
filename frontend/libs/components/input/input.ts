@@ -3,7 +3,7 @@ import { Directive } from '@angular/core';
 /**
  * Text field.
  *
- *   <input boInput type="search" placeholder="Tìm kiếm" />
+ *   <input boInput type="search" placeholder="Search" />
  *
  * A directive, so `type`, `placeholder`, `disabled`, `readonly`, form binding
  * and every input mode keep working without this file knowing they exist. The

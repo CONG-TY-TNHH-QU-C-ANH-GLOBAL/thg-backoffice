@@ -6,8 +6,8 @@ export type ButtonSize = 'md' | 'sm';
 /**
  * Button.
  *
- *   <button bo-button variant="primary">Tạo mới</button>
- *   <a bo-button variant="ghost" routerLink="/x">Xem</a>
+ *   <button bo-button variant="primary">Save</button>
+ *   <a bo-button variant="ghost" routerLink="/x">Details</a>
  *
  * A directive on the native element, not a wrapping component, and that is the
  * whole design. `<button>` already ships the type, the disabled semantics, the

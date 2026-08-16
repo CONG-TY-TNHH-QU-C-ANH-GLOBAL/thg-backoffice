@@ -4,7 +4,7 @@ import { ButtonSize } from '../button/button';
 /**
  * Square, borderless button holding a single icon.
  *
- *   <button bo-icon-button aria-label="Thông báo"><bo-icon name="bell" /></button>
+ *   <button bo-icon-button aria-label="Notifications"><bo-icon name="bell" /></button>
  *
  * Separate from `bo-button` because it is a different control, not a variant:
  * it is square rather than text-width, and it has no visible label — which is

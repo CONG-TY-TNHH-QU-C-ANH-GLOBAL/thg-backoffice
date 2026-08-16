@@ -118,7 +118,7 @@
   --t-2xl: 27px;
 
   /* --- signal ------------------------------------------------------------
-   * THG runs continuously — data arriving, AI coordinating — and the interface
+   * An operations product runs continuously — data arriving, jobs finishing —
    * should register that without ever competing with the work. These are the
    * only motion values in the system, and both are deliberately slower than the
    * eye tracks: a pulse you notice only after you have been looking at it, and

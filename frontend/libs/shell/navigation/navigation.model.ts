@@ -2,10 +2,12 @@ import { InjectionToken, Provider } from '@angular/core';
 import { Role } from '@bo/core';
 
 /**
- * Fixed navigation entries a tenant wants in the sidebar (Tổng quan, Việc của
- * tôi, Yêu cầu, Cài đặt…). The shell renders whatever it is given — it does not
- * know what any of these pages contain, and it holds no default list, so a
- * different company ships a different sidebar with zero shell changes.
+ * Fixed navigation entries a tenant wants in the sidebar — overview, inbox,
+ * settings, whatever that customer's product calls them.
+ *
+ * The shell renders whatever it is given. It does not know what any of these
+ * pages contain, and it deliberately holds NO default list, so a different
+ * company ships a different sidebar with zero shell changes.
  *
  * Department entries are NOT declared here: they come from runtime data.
  */

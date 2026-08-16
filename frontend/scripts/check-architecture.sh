@@ -72,6 +72,17 @@ report "R5b shell ↛ màu hex thô" \
 report "R6  libs ↛ apps" \
   "$(grep -rn "apps/" --include=*.ts --include=*.scss libs 2>/dev/null)"
 
+# --- R6b ── foundation không mang từ vựng nghiệp vụ của khách ---------------
+# Kể cả trong comment và test-double. Một khách hàng mới đọc libs/ không được
+# thấy CRM của khách hàng cũ làm ví dụ — đó là cách "generic" âm thầm trở
+# thành "generic cho đúng một công ty".
+# Ngoại lệ đã biết và ghi nhận: copy tiếng Việt trong shell (topbar, sidebar,
+# trang lỗi). Đó là khoá locale, không phải khoá nghiệp vụ, và gỡ nó cần một
+# cơ chế i18n — việc của phase sau, không phải phase này.
+report "R6b libs ↛ từ vựng nghiệp vụ của khách" \
+  "$(grep -rniE "khách hàng|phân công|potential.customer|\blead(s)?\b|\bcrm\b|dropship|fulfill" \
+       --include=*.ts --include=*.scss libs 2>/dev/null)"
+
 # --- R7 ── core chạm components ĐÚNG một chỗ --------------------------------
 # `composition/` render plugin đã đăng ký, nên LazyWidget cần <bo-skeleton> làm
 # placeholder — một cạnh core -> components có thật và không né được nếu không

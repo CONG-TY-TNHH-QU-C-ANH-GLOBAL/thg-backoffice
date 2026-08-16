@@ -6,8 +6,8 @@ import { isRole } from './rules/scope';
 /**
  * Structural guard for small UI bits:
  *
- *   <button *boCan="'SUPERADMIN'">Cấu hình</button>
- *   <a *boCan="'potential-customers'; in: department">…</a>
+ *   <button *boCan="'SUPERADMIN'">Settings</button>
+ *   <a *boCan="'<capability-key>'; in: department">…</a>
  *
  * A role name checks the persona; anything else is a capability key.
  * For whole panels prefer a workspace widget — hiding buttons on a shared

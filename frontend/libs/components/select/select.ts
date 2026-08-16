@@ -3,7 +3,7 @@ import { Directive } from '@angular/core';
 /**
  * Native select.
  *
- *   <select boSelect [(ngModel)]="departmentId"> … </select>
+ *   <select boSelect [(ngModel)]="unitId"> … </select>
  *
  * Native on purpose: a custom listbox costs a keyboard implementation, a focus
  * trap, virtual scrolling and a screen-reader contract, and on a phone it loses
