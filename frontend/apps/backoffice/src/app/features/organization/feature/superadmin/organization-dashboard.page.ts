@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { AccessService, BRANDING, SessionStore } from '@bo/core';
-import { WidgetHost } from '@bo/shell';
+import { WidgetHost } from '@bo/core';
 import { Card, Icon, PageHeader, SectionHeader, Skeleton } from '@bo/components';
 import { OverviewRepository } from '../../data-access/overview.repository';
 import { ActivityFeed } from '../../ui/activity-feed';

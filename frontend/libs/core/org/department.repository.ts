@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { Department, Member } from '../models/organization';
+import { Department, Member } from '../models/organization.model';
 
 /**
  * Data contract for the organization structure. Abstract class doubles as the

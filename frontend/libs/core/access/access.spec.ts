@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { AccessService } from './access.service';
-import { canAssignRecords, canSeeRecord } from './record-access';
-import { CapabilityDescriptor, provideCapabilities } from '../capability/capability.model';
-import { Department, UserContext } from '../models/organization';
+import { canAssignRecords, canSeeRecord } from './rules/record-access';
+import { CapabilityDescriptor, provideCapabilities } from '../composition/capability.model';
+import { Department, UserContext } from '../models/organization.model';
 import { DepartmentRepository } from '../org/department.repository';
 import { OrgStore } from '../org/org.store';
-import { SessionRepository } from '../session/session.repository';
-import { SessionStore } from '../session/session.store';
+import { SessionRepository } from '../identity/session.repository';
+import { SessionStore } from '../identity/session.store';
 
 const dept = (id: string, capabilities: string[]): Department => ({
   id,

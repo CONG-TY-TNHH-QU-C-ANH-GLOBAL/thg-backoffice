@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { UserContext } from '../models/organization';
+import { UserContext } from '../models/organization.model';
 import { SessionRepository } from './session.repository';
 
 @Injectable({ providedIn: 'root' })

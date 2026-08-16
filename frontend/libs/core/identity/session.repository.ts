@@ -1,5 +1,5 @@
 import { Observable } from 'rxjs';
-import { UserContext } from '../models/organization';
+import { UserContext } from '../models/organization.model';
 
 /**
  * The authentication boundary. Backoffice does not sign anyone in — the

@@ -1,13 +1,12 @@
 import { Routes } from '@angular/router';
+// Quyền đến từ core, khung ứng dụng đến từ shell — hai câu hỏi khác nhau.
+import { authGuard, departmentGuard, superadminGuard } from '@bo/core';
 import {
   NoAccessPage,
   PlaceholderPage,
   Shell,
   WorkspaceHost,
-  authGuard,
   capabilityRoutes,
-  departmentGuard,
-  superadminGuard,
 } from '@bo/shell';
 import { workspaceCapabilities } from './features/organization';
 import { worklistCapabilities } from './features/worklist';

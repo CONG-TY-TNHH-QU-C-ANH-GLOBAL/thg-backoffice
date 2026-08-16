@@ -72,6 +72,15 @@ report "R5b shell ↛ màu hex thô" \
 report "R6  libs ↛ apps" \
   "$(grep -rn "apps/" --include=*.ts --include=*.scss libs 2>/dev/null)"
 
+# --- R7 ── core chạm components ĐÚNG một chỗ --------------------------------
+# `composition/` render plugin đã đăng ký, nên LazyWidget cần <bo-skeleton> làm
+# placeholder — một cạnh core -> components có thật và không né được nếu không
+# đổi giao diện. Chấp nhận, nhưng khoanh lại: phần còn lại của core phải sạch,
+# nếu không thì "core không biết gì về UI" mất hết ý nghĩa.
+report "R7  core ↛ components (ngoài composition/)" \
+  "$(grep -rn "from '@bo/components" --include=*.ts libs/core 2>/dev/null \
+     | grep -v "^libs/core/composition/")"
+
 echo
 if [ $fail -eq 0 ]; then
   printf '\033[32mTất cả ranh giới đều sạch.\033[0m\n'

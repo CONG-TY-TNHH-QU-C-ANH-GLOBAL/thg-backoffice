@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
-import { CapabilityDescriptor } from '@bo/core';
+import { CapabilityDescriptor, capabilityGuard } from '@bo/core';
 import { CapabilityOutlet } from './capability-outlet';
-import { capabilityGuard } from './guards';
 
 /**
  * Turns registered capabilities into child routes of a department workspace.

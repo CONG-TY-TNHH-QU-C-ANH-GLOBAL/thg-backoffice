@@ -1,6 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { Department } from '../models/organization';
+import { Department } from '../models/organization.model';
 import { DepartmentRepository } from './department.repository';
 
 /**

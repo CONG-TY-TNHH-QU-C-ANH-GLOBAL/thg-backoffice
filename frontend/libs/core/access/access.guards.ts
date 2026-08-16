@@ -1,6 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AccessService, OrgStore, SessionStore } from '@bo/core';
+import { OrgStore } from '../org/org.store';
+import { SessionStore } from '../identity/session.store';
+import { AccessService } from './access.service';
 
 export const authGuard: CanActivateFn = () => {
   if (inject(SessionStore).context()) return true;

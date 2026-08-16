@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { AccessService, SessionStore, WorkspaceContext } from '@bo/core';
-import { WidgetHost } from '@bo/shell';
+import { WidgetHost } from '@bo/core';
 import { Badge, Card, EmptyState, Icon, PageHeader } from '@bo/components';
 import { OverviewRepository } from '../../data-access/overview.repository';
 import { ApprovalList } from '../../ui/approval-list';

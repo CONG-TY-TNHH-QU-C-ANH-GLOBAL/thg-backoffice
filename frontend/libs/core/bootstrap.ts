@@ -1,7 +1,7 @@
 import { provideAppInitializer, inject } from '@angular/core';
-import { BRANDING, Branding } from './models/branding';
+import { BRANDING, Branding } from './branding/branding';
 import { OrgStore } from './org/org.store';
-import { SessionStore } from './session/session.store';
+import { SessionStore } from './identity/session.store';
 
 /**
  * Session and organization must be resolved before the first route renders —

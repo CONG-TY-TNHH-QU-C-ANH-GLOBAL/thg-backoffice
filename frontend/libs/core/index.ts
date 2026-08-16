@@ -1,26 +1,46 @@
 /*
- * @bo/core — organization model, access rules and composition
- * contracts. Zero UI, zero transport, zero tenant vocabulary.
+ * @bo/core — who is acting, what they may do, and what has been registered.
+ *
+ * Frontend application infrastructure: identity, authorization, the plugin
+ * composition mechanism, and the organization model they all speak about.
+ * Zero transport, zero tenant vocabulary, zero business logic.
+ *
+ * The one boundary worth knowing: `access/rules/` holds pure functions with no
+ * Angular, no RxJS and no DI, because a TypeScript backend is meant to import
+ * that folder and enforce exactly the same rules. Everything else here is the
+ * Angular wiring those rules must stay ignorant of.
  */
 
-export * from './models/organization';
-export * from './models/branding';
+// --- model ------------------------------------------------------------------
+export * from './models/organization.model';
+export * from './models/owned-record.model';
+export * from './branding/branding';
 
-export * from './capability/capability.model';
-export * from './capability/capability.registry';
+// --- authorization ----------------------------------------------------------
+// Rules first: they are the contract. The Angular pieces below only apply them.
+export * from './access/rules/scope';
+export * from './access/rules/unit-access';
+export * from './access/rules/record-access';
+export * from './access/access.service';
+export * from './access/access.guards';
+export * from './access/can.directive';
 
-export * from './workspace/workspace.model';
-export * from './workspace/workspace.registry';
-export * from './workspace/workspace-context';
+// --- identity ---------------------------------------------------------------
+export * from './identity/session.repository';
+export * from './identity/session.store';
 
+// --- organization -----------------------------------------------------------
 export * from './org/department.repository';
 export * from './org/org.store';
 
-export * from './session/session.repository';
-export * from './session/session.store';
-
-export * from './access/access.service';
-export * from './access/record-access';
-export * from './access/can.directive';
+// --- composition ------------------------------------------------------------
+// How a capability registers itself, and how registered things get rendered.
+export * from './composition/capability.model';
+export * from './composition/capability.registry';
+export * from './composition/workspace.model';
+export * from './composition/workspace.registry';
+export * from './composition/workspace-context';
+export * from './composition/widget-host';
+export * from './composition/lazy-widget';
 
 export * from './bootstrap';

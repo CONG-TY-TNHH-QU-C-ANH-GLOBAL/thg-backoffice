@@ -1,7 +1,8 @@
-import { OwnedRecord, UserContext } from '../models/organization';
+import { UserContext } from '../../models/organization.model';
+import { OwnedRecord } from '../../models/owned-record.model';
 
 /**
- * LEVEL 2 — record ownership *inside* a department.
+ * LEVEL 2 — record ownership *inside* a unit.
  *
  * Deliberately separate from department isolation (level 1, AccessService).
  * They answer different questions and must not be collapsed into one ranked
@@ -13,6 +14,9 @@ import { OwnedRecord, UserContext } from '../models/organization';
  *
  * The server is the enforcement point. This mirror exists so fixtures behave
  * like production and so the UI never renders a row it would then have to hide.
+ *
+ * Pure by contract: no Angular, no RxJS, no DI, no router. A backend written
+ * in TypeScript imports this file as-is rather than re-implementing it.
  */
 export function canSeeRecord(record: OwnedRecord, ctx: UserContext): boolean {
   switch (ctx.role) {

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Department } from '../models/organization';
+import { Department } from '../models/organization.model';
 
 /**
  * The department a workspace is currently about. Set by whatever page owns the

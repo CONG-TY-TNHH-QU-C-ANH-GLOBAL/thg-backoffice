@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { Accent } from './organization';
+import { Accent } from '../models/organization.model';
 
 /**
  * Everything tenant-specific about the chrome. The platform reads this; it

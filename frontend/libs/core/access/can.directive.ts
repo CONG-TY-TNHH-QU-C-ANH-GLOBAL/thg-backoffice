@@ -1,9 +1,7 @@
 import { Directive, TemplateRef, ViewContainerRef, effect, inject, input } from '@angular/core';
-import { Department, Role } from '../models/organization';
+import { Department } from '../models/organization.model';
 import { AccessService } from './access.service';
-
-const ROLES: readonly Role[] = ['SUPERADMIN', 'DEPARTMENT_HEAD', 'MEMBER'];
-const isRole = (value: string): value is Role => (ROLES as readonly string[]).includes(value);
+import { isRole } from './rules/scope';
 
 /**
  * Structural guard for small UI bits:

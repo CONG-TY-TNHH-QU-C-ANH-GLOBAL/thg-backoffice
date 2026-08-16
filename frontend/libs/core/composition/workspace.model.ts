@@ -1,5 +1,6 @@
 import { InjectionToken, Provider, Type } from '@angular/core';
-import { CapabilityKey, Role } from '../models/organization';
+import { CapabilityKey } from '../models/organization.model';
+import { Role } from '../access/rules/scope';
 
 /**
  * Role does not merely gate buttons — it selects an entirely different

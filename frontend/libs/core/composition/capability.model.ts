@@ -1,5 +1,6 @@
 import { InjectionToken, Provider, Type } from '@angular/core';
-import { Accent, CapabilityKey, Role } from '../models/organization';
+import { Accent, CapabilityKey } from '../models/organization.model';
+import { Role } from '../access/rules/scope';
 
 /**
  * A capability is a reusable software module. It is registered once and any

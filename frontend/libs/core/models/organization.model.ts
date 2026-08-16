@@ -1,9 +1,9 @@
+import { Role } from '../access/rules/scope';
+
 /**
  * Organization model. Deliberately free of any tenant's business vocabulary —
  * a department here is a row of data, never a name baked into the code.
  */
-
-export type Role = 'SUPERADMIN' | 'DEPARTMENT_HEAD' | 'MEMBER';
 
 /** Key of a capability registered in the capability registry. */
 export type CapabilityKey = string;
@@ -43,15 +43,4 @@ export interface Member {
   title: string;
   role: Role;
   avatarUrl?: string;
-}
-
-/**
- * Anything a MEMBER can own. Ownership is a separate concern from department
- * isolation — see RecordAccess.
- */
-export interface OwnedRecord {
-  id: string;
-  departmentId: string;
-  /** null = unassigned, visible to the department's head but to no member. */
-  assigneeId: string | null;
 }
