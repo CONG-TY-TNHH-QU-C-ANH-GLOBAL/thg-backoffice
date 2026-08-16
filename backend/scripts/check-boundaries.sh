@@ -62,16 +62,48 @@ report "B5  không có thư mục top-level theo loại file" \
 # Thứ đáng cấm là `process.env.SOMETHING` — đọc thẳng một biến, bỏ qua schema.
 # Truyền cả `process.env` cho envSchema thì HỢP LỆ: vẫn là một cửa duy nhất, và
 # CLI migrate chạy ngoài DI container nên buộc phải làm vậy.
+#
+# Bắt CẢ HAI dạng truy cập. Trước đây rule chỉ bắt dấu chấm, nên
+# `process.env['FOO']` đi lọt hoàn toàn — và create-user.cli.ts đã nằm trong
+# đúng điểm mù đó mà không ai thấy. Một rule né được bằng cách đổi cú pháp
+# thì không phải là rule.
+#
+# Ngoại lệ là ALLOWLIST THEO TÊN FILE, không phải glob: một CLI mới hay một
+# integration spec mới sẽ đỏ cho tới khi được thêm vào đây một cách có ý thức.
+# Glob "*.cli.ts" sẽ khiến mọi CLI tương lai âm thầm thừa hưởng quyền đọc
+# config ngoài schema.
+#
+#   create-user.cli.ts   BOOTSTRAP_PASSWORD cố ý KHÔNG nằm trong envSchema.
+#                        Đó là credential dùng một lần, không phải cấu hình
+#                        deployment; đưa vào schema là để mật khẩu sống trong
+#                        AppConfig suốt vòng đời tiến trình.
+#   *.integration.spec   DATABASE_URL_TEST chỉ để test tự tắt khi máy không có
+#                        PostgreSQL. Không phải đường chạy thật.
 report "B6  không đọc process.env.X ngoài validate" \
-  "$(grep -rn "process\.env\.[A-Za-z_]" --include=*.ts src 2>/dev/null)"
+  "$(grep -rnE "process\.env(\.[A-Za-z_]|\[)" --include=*.ts src 2>/dev/null \
+     | grep -vE "(src/core/users/create-user\.cli\.ts|\.integration\.spec\.ts):")"
 
 # --- B7 ── foundation không mang từ vựng nghiệp vụ -------------------------
 # Danh sách này là ví dụ, không phải giới hạn: nếu một domain mới rò rỉ vào
 # foundation, thêm nó vào đây.
 # Chỉ soi CODE, không soi comment — "in filename order" là văn xuôi tiếng Anh,
 # không phải entity Order. Một checker hay báo nhầm là một checker bị tắt.
+#
+# KHÔNG dùng ranh giới từ hai đầu, và soi không phân biệt hoa thường. Bản cũ
+# viết \bcustomer\b nên bỏ lọt gần như mọi dạng rò rỉ thật:
+#
+#   customerId          \b phía sau vấp vào 'I'
+#   customers           \b phía sau vấp vào 's'
+#   CustomerRepository  chữ hoa
+#   getCustomerName     \b phía trước vấp vào 't'
+#
+# Bốn dạng đó mới là hình dạng rò rỉ thực tế; từ trần "customer" thì hiếm.
+# Kiểm chứng trên cây hiện tại: 0 false positive.
+#
+# 'crm' vẫn giữ ranh giới hai đầu — ba ký tự quá ngắn, bỏ ranh giới ra là nó
+# sẽ khớp vào giữa những định danh không liên quan.
 report "B7  foundation ↛ từ vựng nghiệp vụ" \
-  "$(grep -rnE "\b(customer|invoice|shipment|warehouse|recruitment|crm)\b" \
+  "$(grep -rinE "(customer|invoice|shipment|warehouse|recruitment|\bcrm\b)" \
        --include=*.ts src/core src/common src/infrastructure src/config 2>/dev/null \
      | grep -vE ':[0-9]+: *(\*|//|/\*)')"
 
