@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { AccessService } from '@bo/core';
-import { EmptyState, Icon, PageHeader } from '@bo/components';
+import { Button, EmptyState, Icon, PageHeader } from '@bo/components';
 import { DepartmentCard } from '../../ui/department-card';
 
 /** Directory of every department the viewer may enter. */
 @Component({
   selector: 'bo-departments',
-  imports: [DepartmentCard, EmptyState, Icon, PageHeader],
+  imports: [Button, DepartmentCard, EmptyState, Icon, PageHeader],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <bo-page-header
@@ -14,7 +14,7 @@ import { DepartmentCard } from '../../ui/department-card';
       subtitle="Danh sách phòng ban và năng lực đang được cấp"
     >
       <div pageActions>
-        <button class="btn btn--sm btn--primary" type="button">
+        <button bo-button size="sm" variant="primary" type="button">
           <bo-icon name="plus" [size]="14" />
           Tạo phòng ban
         </button>

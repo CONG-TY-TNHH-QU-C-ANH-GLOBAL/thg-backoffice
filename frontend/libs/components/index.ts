@@ -7,6 +7,14 @@
 
 export * from './accent';
 
+// --- controls ---------------------------------------------------------------
+// Directives on native elements, not wrappers: `<button>` and `<input>` already
+// own their semantics, focus behaviour and form participation.
+export * from './button/button';
+export * from './icon-button/icon-button';
+export * from './input/input';
+export * from './select/select';
+
 export * from './icon/icon';
 export * from './icon/icon.paths';
 export * from './card/card';

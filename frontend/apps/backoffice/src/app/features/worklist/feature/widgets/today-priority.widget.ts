@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { SessionStore } from '@bo/core';
-import { Card, Icon } from '@bo/components';
+import { Button, Card, Icon } from '@bo/components';
 import { WorkItemRepository } from '../../data-access/work-item.repository';
 import { WorkItemTable } from '../../ui/work-item-table';
 
@@ -12,7 +12,7 @@ import { WorkItemTable } from '../../ui/work-item-table';
  */
 @Component({
   selector: 'bo-today-priority-widget',
-  imports: [Card, Icon, RouterLink, WorkItemTable],
+  imports: [Button, Card, Icon, RouterLink, WorkItemTable],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <bo-card title="Việc ưu tiên hôm nay" subtitle="Sắp theo mức ưu tiên và hạn chót" [flush]="true">
@@ -21,7 +21,7 @@ import { WorkItemTable } from '../../ui/work-item-table';
         empty="Bạn không còn việc nào đến hạn hôm nay."
       />
       <div cardFooter class="footer">
-        <a class="btn btn--sm" routerLink="/my-work">
+        <a bo-button size="sm" routerLink="/my-work">
           Xem tất cả việc của tôi
           <bo-icon name="arrow-right" [size]="14" />
         </a>

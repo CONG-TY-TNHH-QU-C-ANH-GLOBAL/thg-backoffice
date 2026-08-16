@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { SessionStore, WorkspaceContext } from '@bo/core';
-import { Card, EmptyState, Icon, StatCard } from '@bo/components';
+import { Button, Card, EmptyState, Icon, StatCard } from '@bo/components';
 import { PotentialCustomerRepository } from '../../data-access/potential-customer.repository';
 import { ONBOARDING } from '../../ui/customer-vocabulary';
 import { isFollowUpDue, isStale } from '../../ui/customer-vocabulary';
@@ -13,7 +13,7 @@ import { isFollowUpDue, isStale } from '../../ui/customer-vocabulary';
  */
 @Component({
   selector: 'thg-my-customers-widget',
-  imports: [Card, EmptyState, Icon, RouterLink, StatCard],
+  imports: [Button, Card, EmptyState, Icon, RouterLink, StatCard],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="stats">
@@ -58,7 +58,7 @@ import { isFollowUpDue, isStale } from '../../ui/customer-vocabulary';
       }
 
       <div cardFooter class="footer">
-        <a class="btn btn--sm" [routerLink]="listLink()">
+        <a bo-button size="sm" [routerLink]="listLink()">
           Xem tất cả khách hàng của tôi
           <bo-icon name="arrow-right" [size]="14" />
         </a>

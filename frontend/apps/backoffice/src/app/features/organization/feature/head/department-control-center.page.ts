@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { AccessService, SessionStore, WorkspaceContext } from '@bo/core';
 import { WidgetHost } from '@bo/core';
-import { Badge, Card, EmptyState, Icon, PageHeader } from '@bo/components';
+import { Badge, Button, Card, EmptyState, Icon, PageHeader } from '@bo/components';
 import { OverviewRepository } from '../../data-access/overview.repository';
 import { ApprovalList } from '../../ui/approval-list';
 import { MetricRow } from '../../ui/metric-row';
@@ -19,7 +19,7 @@ import { SuggestionList } from '../../ui/suggestion-list';
  */
 @Component({
   selector: 'bo-department-control-center',
-  imports: [ApprovalList, Badge, Card, EmptyState, Icon, MetricRow, PageHeader, SuggestionList, WidgetHost],
+  imports: [ApprovalList, Badge, Button, Card, EmptyState, Icon, MetricRow, PageHeader, SuggestionList, WidgetHost],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (department(); as dept) {
@@ -29,7 +29,7 @@ import { SuggestionList } from '../../ui/suggestion-list';
       >
         <div pageActions>
           <bo-badge tone="success" [dot]="true">Đang hoạt động</bo-badge>
-          <button class="btn btn--sm" type="button">
+          <button bo-button size="sm" type="button">
             <bo-icon name="plus" [size]="14" />
             Đề xuất năng lực
           </button>

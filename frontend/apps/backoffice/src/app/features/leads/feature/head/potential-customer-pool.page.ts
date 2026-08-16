@@ -4,11 +4,13 @@ import { firstValueFrom } from 'rxjs';
 import { SessionStore, WorkspaceContext } from '@bo/core';
 import {
   Avatar,
+  Button,
   Card,
   CellDef,
   DataTable,
   DateTimePipe,
   Icon,
+  Input,
   TableColumn,
 } from '@bo/components';
 import { PotentialCustomer } from '../../models/potential-customer';
@@ -42,7 +44,7 @@ const ALL_COLUMNS: TableColumn[] = [
  */
 @Component({
   selector: 'thg-potential-customer-pool',
-  imports: [Avatar, Card, CellDef, CustomerStatusBadge, DataTable, DateTimePipe, Icon],
+  imports: [Avatar, Button, Card, CellDef, CustomerStatusBadge, DataTable, DateTimePipe, Icon, Input],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <bo-card
@@ -77,7 +79,7 @@ const ALL_COLUMNS: TableColumn[] = [
         <ng-template boCell="assign" let-customer>
           <div class="assign">
             <select
-              class="input"
+              boInput
               [attr.aria-label]="'Phân công ' + customer.name"
               [value]="picked()[customer.id] ?? ''"
               (change)="pick(customer.id, $event)"
@@ -88,7 +90,7 @@ const ALL_COLUMNS: TableColumn[] = [
               }
             </select>
             <button
-              class="btn btn--sm btn--primary"
+              bo-button size="sm" variant="primary"
               type="button"
               [disabled]="!picked()[customer.id] || busy() === customer.id"
               (click)="assign(customer)"

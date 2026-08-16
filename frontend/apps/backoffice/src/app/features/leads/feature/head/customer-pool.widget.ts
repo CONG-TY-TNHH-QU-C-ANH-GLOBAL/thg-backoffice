@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { SessionStore, WorkspaceContext } from '@bo/core';
-import { Card, EmptyState, Icon } from '@bo/components';
+import { Button, Card, EmptyState, Icon } from '@bo/components';
 import { PotentialCustomerRepository } from '../../data-access/potential-customer.repository';
 import { SOURCE } from '../../ui/customer-vocabulary';
 import { PotentialCustomer } from '../../models/potential-customer';
@@ -13,7 +13,7 @@ import { PotentialCustomer } from '../../models/potential-customer';
  */
 @Component({
   selector: 'thg-customer-pool-widget',
-  imports: [Card, EmptyState, Icon, RouterLink],
+  imports: [Button, Card, EmptyState, Icon, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <bo-card title="Khách hàng chưa phân công" [subtitle]="subtitle()" [flush]="true">
@@ -25,7 +25,7 @@ import { PotentialCustomer } from '../../models/potential-customer';
               {{ customer.businessLine }} · {{ source(customer).label }}
             </span>
           </div>
-          <a class="btn btn--sm" [routerLink]="poolLink()">Phân công</a>
+          <a bo-button size="sm" [routerLink]="poolLink()">Phân công</a>
         </div>
       } @empty {
         <bo-empty-state icon="check-circle" message="Mọi khách hàng đều đã có người phụ trách." />
@@ -33,7 +33,7 @@ import { PotentialCustomer } from '../../models/potential-customer';
 
       @if ((pool.value()?.length ?? 0) > top().length) {
         <div cardFooter class="footer">
-          <a class="btn btn--sm" [routerLink]="poolLink()">
+          <a bo-button size="sm" [routerLink]="poolLink()">
             Xem tất cả {{ pool.value()?.length }} khách
             <bo-icon name="arrow-right" [size]="14" />
           </a>

@@ -1,5 +1,9 @@
-/* Design system tokens + base. Everything else is component-scoped. */
+/* The visual contract: tokens, reset, base element styles. */
 @use 'index' as *;
+
+/* Controls whose classes native elements wear (.btn, .input, .select).
+ * Everything else is component-scoped and needs no global sheet. */
+@use 'controls' as *;
 
 /*
  * CDK overlay positioning only — the navigation rail's tooltip renders into a

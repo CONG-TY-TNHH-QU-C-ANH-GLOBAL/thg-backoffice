@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { AccessService, SessionStore } from '@bo/core';
-import { Card, EmptyState, Icon, Radial, Skeleton } from '@bo/components';
+import { Card, EmptyState, Icon, IconButton, Radial, Select, Skeleton } from '@bo/components';
 import { Metric } from '../../models/overview';
 import { OverviewRepository } from '../../data-access/overview.repository';
 
@@ -13,13 +13,13 @@ import { OverviewRepository } from '../../data-access/overview.repository';
  */
 @Component({
   selector: 'bo-department-preview',
-  imports: [Card, EmptyState, Icon, Radial, RouterLink, Skeleton],
+  imports: [Card, EmptyState, Icon, IconButton, Radial, RouterLink, Select, Skeleton],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (selected(); as dept) {
       <bo-card [title]="dept.name + ' workspace'" subtitle="Chỉ số nhanh của phòng ban">
         <div cardActions class="tools">
-          <select class="select" aria-label="Chọn phòng ban để xem trước" (change)="choose($event)">
+          <select boSelect aria-label="Chọn phòng ban để xem trước" (change)="choose($event)">
             @for (option of departments(); track option.id) {
               <option [value]="option.slug" [selected]="option.slug === dept.slug">
                 {{ option.name }}
@@ -27,7 +27,7 @@ import { OverviewRepository } from '../../data-access/overview.repository';
             }
           </select>
           <a
-            class="btn btn--sm btn--icon"
+            bo-icon-button size="sm"
             [routerLink]="['/departments', dept.slug]"
             [attr.aria-label]="'Mở workspace ' + dept.name"
             [title]="'Mở workspace ' + dept.name"

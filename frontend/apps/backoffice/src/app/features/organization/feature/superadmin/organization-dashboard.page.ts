@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { AccessService, BRANDING, SessionStore } from '@bo/core';
 import { WidgetHost } from '@bo/core';
-import { Card, Icon, PageHeader, SectionHeader, Skeleton } from '@bo/components';
+import { Button, Card, Icon, PageHeader, SectionHeader, Skeleton } from '@bo/components';
 import { OverviewRepository } from '../../data-access/overview.repository';
 import { ActivityFeed } from '../../ui/activity-feed';
 import { ApprovalList } from '../../ui/approval-list';
@@ -26,6 +26,7 @@ import { DepartmentPreviewPanel } from './department-preview.panel';
   imports: [
     ActivityFeed,
     ApprovalList,
+    Button,
     Card,
     DepartmentCard,
     DepartmentPreviewPanel,
@@ -42,11 +43,11 @@ import { DepartmentPreviewPanel } from './department-preview.panel';
   template: `
     <bo-page-header [title]="branding.productName" subtitle="Nền tảng vận hành nội bộ thống nhất">
       <div pageActions>
-        <button class="btn btn--sm" type="button">
+        <button bo-button size="sm" type="button">
           <bo-icon name="settings" [size]="14" />
           Tùy chỉnh dashboard
         </button>
-        <button class="btn btn--sm" type="button">
+        <button bo-button size="sm" type="button">
           <bo-icon name="calendar" [size]="14" />
           7 ngày qua
           <bo-icon name="chevron-down" [size]="13" />
@@ -80,7 +81,7 @@ import { DepartmentPreviewPanel } from './department-preview.panel';
       >
         <bo-approval-list [items]="approvals.value() ?? []" />
         <div cardFooter class="footer">
-          <a class="btn btn--sm btn--soft btn--block" routerLink="/requests">
+          <a bo-button size="sm" variant="soft" block routerLink="/requests">
             Xem tất cả yêu cầu
             <bo-icon name="arrow-right" [size]="14" />
           </a>
@@ -90,7 +91,7 @@ import { DepartmentPreviewPanel } from './department-preview.panel';
       <bo-card title="AI Điều phối" badge="Beta" [flush]="true">
         <bo-suggestion-list [items]="suggestions.value() ?? []" />
         <div cardFooter class="footer">
-          <a class="btn btn--sm btn--soft btn--block" routerLink="/ai">
+          <a bo-button size="sm" variant="soft" block routerLink="/ai">
             Xem tất cả gợi ý
             <bo-icon name="arrow-right" [size]="14" />
           </a>

@@ -34,7 +34,7 @@
             ],
             "styles": ["apps/backoffice/src/styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/components/styles"]
+              "includePaths": ["libs/tokens", "libs/components"]
             }
           },
           "configurations": {
@@ -90,7 +90,7 @@
             ],
             "styles": ["apps/backoffice/src/styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/components/styles"]
+              "includePaths": ["libs/tokens", "libs/components"]
             }
           }
         }
@@ -138,7 +138,7 @@
             "polyfills": ["zone.js", "zone.js/testing"],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/components/styles"]
+              "includePaths": ["libs/tokens", "libs/components"]
             }
           }
         }
@@ -164,7 +164,7 @@
             "polyfills": ["zone.js", "zone.js/testing"],
             "inlineStyleLanguage": "scss",
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/components/styles"]
+              "includePaths": ["libs/tokens", "libs/components"]
             }
           }
         }

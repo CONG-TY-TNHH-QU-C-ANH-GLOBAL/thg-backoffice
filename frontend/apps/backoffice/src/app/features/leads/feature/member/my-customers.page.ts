@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { rxResource } from '@angular/core/rxjs-interop';
 import { SessionStore, WorkspaceContext } from '@bo/core';
 import {
+  Button,
   Card,
   CellDef,
   DataTable,
@@ -41,7 +42,7 @@ const FILTERS: Array<{ value: PotentialCustomerStatus | 'ALL'; label: string }> 
  */
 @Component({
   selector: 'thg-my-customers',
-  imports: [Card, CellDef, CustomerStatusBadge, DataTable, DateTimePipe, Icon, ProgressBar],
+  imports: [Button, Card, CellDef, CustomerStatusBadge, DataTable, DateTimePipe, Icon, ProgressBar],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <bo-card title="Khách hàng của tôi" [subtitle]="subtitle()" [flush]="true">
@@ -58,7 +59,7 @@ const FILTERS: Array<{ value: PotentialCustomerStatus | 'ALL'; label: string }> 
         <div class="chips" role="group" aria-label="Lọc theo trạng thái">
           @for (filter of filters; track filter.value) {
             <button
-              class="btn btn--sm"
+              bo-button size="sm"
               type="button"
               [attr.aria-pressed]="status() === filter.value"
               [class.btn--primary]="status() === filter.value"
