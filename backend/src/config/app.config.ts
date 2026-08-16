@@ -36,6 +36,11 @@ export class AppConfig {
     return this.config.get('CORS_ORIGINS', { infer: true });
   }
 
+  /** 0 means no proxy is trusted, so X-Forwarded-For is ignored. */
+  get trustProxyHops(): number {
+    return this.config.get('TRUST_PROXY_HOPS', { infer: true });
+  }
+
   get isProduction(): boolean {
     return this.nodeEnv === 'production';
   }

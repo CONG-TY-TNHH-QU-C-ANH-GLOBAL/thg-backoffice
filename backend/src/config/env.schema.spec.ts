@@ -23,6 +23,50 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ DATABASE_URL: 'mysql://localhost/db' })).toThrow(/PostgreSQL/);
   });
 
+  describe('DATABASE_URL is validated by parsing, not by prefix', () => {
+    // A prefix check accepts strings that cannot connect, and the failure then
+    // arrives as a connection error that reads like the database is down
+    // rather than like the URL is wrong.
+    it('refuses a URL with no host', () => {
+      expect(() => validateEnv({ DATABASE_URL: 'postgres:///db' })).toThrow(/host/);
+    });
+
+    it('refuses a URL that names no database', () => {
+      expect(() => validateEnv({ DATABASE_URL: 'postgres://user:pw@localhost:5432' })).toThrow(
+        /database/,
+      );
+    });
+
+    it('refuses something that is not a URL at all', () => {
+      expect(() => validateEnv({ DATABASE_URL: 'not a url' })).toThrow(/valid URL/);
+    });
+
+    it('accepts both accepted schemes', () => {
+      for (const url of [
+        'postgres://user:pw@localhost:5432/backoffice',
+        'postgresql://user:pw@db.internal:5432/backoffice',
+      ]) {
+        expect(validateEnv({ ...valid, DATABASE_URL: url }).DATABASE_URL).toBe(url);
+      }
+    });
+  });
+
+  describe('TRUST_PROXY_HOPS', () => {
+    it('defaults to trusting NO proxy, so X-Forwarded-For cannot be forged', () => {
+      // The login throttle keys on the client address. Trusting a header by
+      // default would hand an attacker a fresh budget per request.
+      expect(validateEnv(valid).TRUST_PROXY_HOPS).toBe(0);
+    });
+
+    it('accepts a hop count for a deployment that really is behind a proxy', () => {
+      expect(validateEnv({ ...valid, TRUST_PROXY_HOPS: '1' }).TRUST_PROXY_HOPS).toBe(1);
+    });
+
+    it('rejects a negative hop count', () => {
+      expect(() => validateEnv({ ...valid, TRUST_PROXY_HOPS: '-1' })).toThrow();
+    });
+  });
+
   it('coerces PORT from string, because env vars are always strings', () => {
     expect(validateEnv({ ...valid, PORT: '8080' }).PORT).toBe(8080);
   });

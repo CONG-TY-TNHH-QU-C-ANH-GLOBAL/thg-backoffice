@@ -16,11 +16,45 @@ export const envSchema = z.object({
    * One deployment, one database. That is the isolation boundary — there is no
    * tenant column and no tenant resolver anywhere in this codebase.
    */
+  /**
+   * Validated by parsing, not by prefix.
+   *
+   * A `startsWith` check passes `postgres://` with no host at all, and the
+   * failure then arrives later as a connection error that reads like the
+   * database is down rather than like the URL is wrong.
+   */
   DATABASE_URL: z
     .string()
     .min(1, 'DATABASE_URL is required')
-    .refine((value) => value.startsWith('postgres://') || value.startsWith('postgresql://'), {
-      message: 'DATABASE_URL must be a PostgreSQL connection string',
+    .superRefine((value, ctx) => {
+      let url: URL;
+      try {
+        url = new URL(value);
+      } catch {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'DATABASE_URL must be a valid URL' });
+        return;
+      }
+
+      if (url.protocol !== 'postgres:' && url.protocol !== 'postgresql:') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `DATABASE_URL must be a PostgreSQL URL (postgres:// or postgresql://), got "${url.protocol}//"`,
+        });
+      }
+
+      if (url.hostname.length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'DATABASE_URL must include a host',
+        });
+      }
+
+      if (url.pathname.replace(/^\//, '').length === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'DATABASE_URL must name a database',
+        });
+      }
     }),
 
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
@@ -54,6 +88,20 @@ export const envSchema = z.object({
     .refine((origins) => !origins.includes('*'), {
       message: 'CORS_ORIGINS must list explicit origins; "*" is refused with credentials.',
     }),
+
+  /**
+   * How many reverse proxies sit in front of this app. DEFAULT 0 — trust none.
+   *
+   * `X-Forwarded-For` is a request header, so a client that reaches the app
+   * directly can write whatever it likes in it. With a hop count configured,
+   * Express takes the client address from that header — which means trusting it
+   * when nothing is actually in front turns the login throttle's per-IP budget
+   * into a formality: an attacker mints a new "address" per request.
+   *
+   * So this must be a deployment fact, not a default. Behind one nginx or one
+   * load balancer, set 1.
+   */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(10).default(0),
 });
 
 export type Env = z.infer<typeof envSchema>;

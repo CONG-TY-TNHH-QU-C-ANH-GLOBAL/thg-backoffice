@@ -31,10 +31,15 @@ export class UserService {
     const subject = normalizeSubject(input.subject);
 
     // Checked before hashing so a duplicate does not cost 100 ms of scrypt.
-    // The unique index is still the authority — this only turns the race into
-    // a clean error rather than a constraint violation in the common case.
+    // The unique index is still the authority — the repository turns the race
+    // that slips past this check into the same error.
+    //
+    // The message names no subject on purpose. This path is a CLI today, but
+    // the moment anything exposes user creation over HTTP, echoing back "an
+    // identity already exists for x@y.z" makes it an account-enumeration
+    // oracle. The caller already knows what they submitted.
     if (await this.users.subjectExists(LOCAL_PROVIDER, subject)) {
-      throw new ConflictError(`An identity already exists for "${subject}".`);
+      throw new ConflictError('That identity is already registered.');
     }
 
     return this.users.createWithLocalIdentity({

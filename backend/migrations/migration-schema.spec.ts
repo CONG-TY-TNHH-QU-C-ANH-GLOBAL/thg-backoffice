@@ -69,7 +69,28 @@ describe('0001_identity.sql', () => {
 
   it('stores a hash column for sessions, never a token column', () => {
     expect(sql).toContain('token_hash');
-    expect(sql).not.toMatch(/^\s*token\s+TEXT/m);
+
+    /**
+     * Any column whose name ENDS in `token`, of any type.
+     *
+     * The previous form was `/^\s*token\s+TEXT/`, which only caught a column
+     * literally called `token` and only when declared TEXT. `session_token
+     * VARCHAR(64)` or `access_token BYTEA` — the shapes someone would actually
+     * write — both walked straight past it. A security check that only
+     * recognises one spelling of the mistake is not a security check.
+     *
+     * `token_hash` is unaffected: the name must END there, and `_hash` follows.
+     */
+    const plaintextTokenColumn = /^\s*"?(?:\w+_)?token"?\s+\w/im;
+
+    expect(sql).not.toMatch(plaintextTokenColumn);
+
+    // And the pattern really does catch what it claims to, rather than passing
+    // because it matches nothing at all.
+    expect('  session_token VARCHAR(64) NOT NULL').toMatch(plaintextTokenColumn);
+    expect('  access_token BYTEA').toMatch(plaintextTokenColumn);
+    expect('  token UUID').toMatch(plaintextTokenColumn);
+    expect('  token_hash  TEXT        NOT NULL').not.toMatch(plaintextTokenColumn);
   });
 
   it('seeds no data — a user is data, not schema', () => {

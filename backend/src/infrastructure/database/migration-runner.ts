@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Pool } from 'pg';
@@ -27,6 +28,9 @@ import { Pool } from 'pg';
 /** Arbitrary but fixed: identifies *this* runner's lock, not any other. */
 const ADVISORY_LOCK_KEY = 4_113_559_201;
 
+/** Detects an edited migration, not an attacker — a plain digest is enough. */
+const sha256 = (text: string): string => createHash('sha256').update(text, 'utf8').digest('hex');
+
 export interface MigrationResult {
   applied: string[];
   skipped: string[];
@@ -53,17 +57,22 @@ export class MigrationRunner {
       const skipped: string[] = [];
 
       for (const file of files) {
+        const sql = await readFile(join(this.directory, file), 'utf8');
+        const checksum = sha256(sql);
+
         if (already.has(file)) {
+          await this.verifyUnchanged(client, file, checksum, already.get(file) ?? null);
           skipped.push(file);
           continue;
         }
 
-        const sql = await readFile(join(this.directory, file), 'utf8');
-
         try {
           await client.query('BEGIN');
           await client.query(sql);
-          await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [file]);
+          await client.query('INSERT INTO schema_migrations (version, checksum) VALUES ($1, $2)', [
+            file,
+            checksum,
+          ]);
           await client.query('COMMIT');
         } catch (error) {
           await client.query('ROLLBACK');
@@ -84,8 +93,21 @@ export class MigrationRunner {
 
       return { applied, skipped };
     } finally {
-      await client.query('SELECT pg_advisory_unlock($1)', [ADVISORY_LOCK_KEY]);
-      client.release();
+      // Unlock and release are separated because the unlock can fail, and if it
+      // did, the lock is still held by THIS session. Returning that connection
+      // to the pool would leave the lock held for as long as the connection
+      // lives, and every later migration run would block on it forever.
+      // Destroying the client ends the session, which PostgreSQL releases the
+      // advisory lock with.
+      let discard = false;
+      try {
+        await client.query('SELECT pg_advisory_unlock($1)', [ADVISORY_LOCK_KEY]);
+      } catch (error) {
+        discard = true;
+        this.logger.error(`Failed to release the migration lock: ${(error as Error).message}`);
+      } finally {
+        client.release(discard);
+      }
     }
   }
 
@@ -100,11 +122,56 @@ export class MigrationRunner {
         applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
       )
     `);
+
+    // Added after the table already existed in the wild, so it arrives as an
+    // ALTER rather than as part of the CREATE. Nullable on purpose: rows
+    // recorded before checksums existed have nothing to put here.
+    await client.query('ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT');
   }
 
-  private async appliedVersions(client: { query: Pool['query'] }): Promise<Set<string>> {
-    const result = await client.query<{ version: string }>('SELECT version FROM schema_migrations');
-    return new Set(result.rows.map((row) => row.version));
+  private async appliedVersions(
+    client: { query: Pool['query'] },
+  ): Promise<Map<string, string | null>> {
+    const result = await client.query<{ version: string; checksum: string | null }>(
+      'SELECT version, checksum FROM schema_migrations',
+    );
+    return new Map(result.rows.map((row) => [row.version, row.checksum]));
+  }
+
+  /**
+   * An applied migration whose file has since changed is a silent divergence:
+   * the runner skips it, so the database keeps the OLD schema while everyone
+   * reading the repository sees the new text. Every later migration is then
+   * written against a schema that does not exist on that server.
+   *
+   * Editing an applied migration is never the fix — this schema is
+   * forward-only. Write a new file.
+   */
+  private async verifyUnchanged(
+    client: { query: Pool['query'] },
+    file: string,
+    checksum: string,
+    recorded: string | null,
+  ): Promise<void> {
+    if (recorded === null) {
+      // Applied before this check existed. The current text is the only
+      // evidence available, so record it — that makes the NEXT edit detectable,
+      // which is the whole point.
+      await client.query('UPDATE schema_migrations SET checksum = $2 WHERE version = $1', [
+        file,
+        checksum,
+      ]);
+      this.logger.warn(`Recorded a checksum for the previously applied ${file}`);
+      return;
+    }
+
+    if (recorded !== checksum) {
+      throw new Error(
+        `Migration ${file} was modified after it was applied ` +
+          `(recorded ${recorded.slice(0, 12)}…, file is ${checksum.slice(0, 12)}…). ` +
+          'Migrations are forward-only: restore the file and add a new migration instead.',
+      );
+    }
   }
 
   private async migrationFiles(): Promise<string[]> {

@@ -45,6 +45,36 @@ describe('UserService', () => {
     expect(users.createWithLocalIdentity).not.toHaveBeenCalled();
   });
 
+  it('does not echo the subject back in the duplicate error', async () => {
+    users.subjectExists.mockResolvedValue(true);
+
+    // This path is a CLI today, but the moment user creation is exposed over
+    // HTTP, repeating the submitted address makes it an enumeration oracle.
+    let message = '';
+    try {
+      await service.createWithPassword({
+        displayName: 'X',
+        subject: 'someone@example.com',
+        password: 'a valid passphrase',
+      });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    expect(message).not.toContain('someone@example.com');
+    expect(message).toBe('That identity is already registered.');
+  });
+
+  it('trims the display name, so a padded name is not stored padded', async () => {
+    await service.createWithPassword({
+      displayName: '  A Person  ',
+      subject: 'a@example.com',
+      password: 'a valid passphrase',
+    });
+
+    expect(users.createWithLocalIdentity.mock.calls[0][0].displayName).toBe('A Person');
+  });
+
   it('checks for the duplicate BEFORE hashing, so a repeat does not cost 100ms of scrypt', async () => {
     users.subjectExists.mockResolvedValue(true);
 

@@ -24,6 +24,25 @@ import { MigrationRunner } from './migration-runner';
 const TEST_URL = process.env['DATABASE_URL_TEST'];
 const describeIntegration = TEST_URL ? describe : describe.skip;
 
+/**
+ * Refuses to run against anything not obviously disposable.
+ *
+ * A destructive suite pointed at the wrong database destroys it silently and
+ * completely, and the mistake that causes it is mundane — copying DATABASE_URL
+ * instead of writing a separate one. Requiring the name to say `test` makes
+ * that mistake loud instead.
+ */
+function assertLooksLikeATestDatabase(url: string): void {
+  const name = new URL(url).pathname.replace(/^\//, '');
+
+  if (!/test/i.test(name)) {
+    throw new Error(
+      `DATABASE_URL_TEST points at "${name}", which is not named as a test database. ` +
+        'This suite DROPS SCHEMA public — point it at a disposable database whose name contains "test".',
+    );
+  }
+}
+
 describeIntegration('MigrationRunner against real PostgreSQL', () => {
   jest.setTimeout(30_000);
 
@@ -31,6 +50,11 @@ describeIntegration('MigrationRunner against real PostgreSQL', () => {
   let directory: string;
 
   beforeAll(() => {
+    // This suite DROPS SCHEMA. The only thing standing between that and someone
+    // pasting a development URL into DATABASE_URL_TEST is this check, so it runs
+    // before the pool is even opened.
+    assertLooksLikeATestDatabase(TEST_URL as string);
+
     pool = new Pool({ connectionString: TEST_URL, max: 4 });
   });
 
@@ -39,8 +63,11 @@ describeIntegration('MigrationRunner against real PostgreSQL', () => {
   });
 
   beforeEach(async () => {
-    await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+    // The temp directory FIRST. If the reset below throws, afterEach still has a
+    // real path to clean up rather than the previous case's — or undefined.
     directory = await mkdtemp(join(tmpdir(), 'bo-migrations-'));
+
+    await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   });
 
   afterEach(async () => {
@@ -145,6 +172,60 @@ describeIntegration('MigrationRunner against real PostgreSQL', () => {
         "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory'",
       );
       expect(held.rows[0]?.count).toBe('0');
+    });
+  });
+
+  /**
+   * The real `migrations/` directory, not a fixture.
+   *
+   * Everything above proves the RUNNER behaves; this proves the schema this
+   * foundation actually ships does. Text-matching the SQL cannot tell whether a
+   * trigger fires.
+   */
+  describe('the shipped migrations', () => {
+    const realMigrations = join(__dirname, '..', '..', '..', 'migrations');
+
+    beforeEach(async () => {
+      await new MigrationRunner(pool, realMigrations).run();
+    });
+
+    it('keeps users.updated_at current on every UPDATE', async () => {
+      const created = await pool.query<{ id: string; updated_at: Date }>(
+        "INSERT INTO users (display_name) VALUES ('A Person') RETURNING id, updated_at",
+      );
+      const { id, updated_at: before } = created.rows[0]!;
+
+      const after = await pool.query<{ updated_at: Date }>(
+        "UPDATE users SET display_name = 'Renamed' WHERE id = $1 RETURNING updated_at",
+        [id],
+      );
+
+      // Without the trigger this column keeps its INSERT value forever, and
+      // anything built on "changed since" reads a wrong answer confidently.
+      expect(after.rows[0]!.updated_at.getTime()).toBeGreaterThan(before.getTime());
+    });
+
+    it('leaves created_at alone when a row changes', async () => {
+      const created = await pool.query<{ id: string; created_at: Date }>(
+        "INSERT INTO users (display_name) VALUES ('B Person') RETURNING id, created_at",
+      );
+      const { id, created_at: before } = created.rows[0]!;
+
+      const after = await pool.query<{ created_at: Date }>(
+        "UPDATE users SET display_name = 'Renamed' WHERE id = $1 RETURNING created_at",
+        [id],
+      );
+
+      expect(after.rows[0]!.created_at.getTime()).toBe(before.getTime());
+    });
+
+    it('runs a second time without applying anything', async () => {
+      // beforeEach already applied them; the trigger migration in particular
+      // must survive being re-run, which DROP TRIGGER IF EXISTS is there for.
+      const result = await new MigrationRunner(pool, realMigrations).run();
+
+      expect(result.applied).toEqual([]);
+      expect(result.skipped.length).toBeGreaterThan(0);
     });
   });
 

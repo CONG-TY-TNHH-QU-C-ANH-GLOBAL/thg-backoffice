@@ -4,12 +4,13 @@ Thứ **mọi** Backoffice cần, không phụ thuộc doanh nghiệp nào.
 
 ```
 core/
-├── identity/        ai đang gọi · session · current context
-├── users/           user là một identity trong deployment
-├── organization/    organizational unit + membership (một aggregate)
-├── authorization/   permission registry · role · scope · guard
-└── capabilities/    CƠ CHẾ đăng ký/bật-tắt capability — không phải capability nào cả
+├── identity/        ai đang gọi · login · session · CSRF · throttle
+└── users/           user và credential của họ
 ```
+
+Đúng hai thư mục, và đó là toàn bộ những gì tồn tại hôm nay. Danh sách này mô tả
+source, không mô tả kế hoạch — một README liệt kê module chưa viết như thể đã có
+là README khiến người đọc đi tìm thứ không tồn tại.
 
 ## Ba luật
 
@@ -25,7 +26,11 @@ OIDC phải mổ vào foundation — đúng thứ ranh giới này sinh ra để
 Không customer, order, product, invoice, shipment. Không tên phòng ban. Không tên
 vai trò của một công ty cụ thể. Những thứ đó là dữ liệu hoặc capability.
 
-## Chưa có gì ở đây
+## Chưa có ở đây
 
-Phase 0 chỉ dựng hạ tầng. Module đầu tiên xuất hiện ở Phase 1 (identity).
-Thư mục này tồn tại để ranh giới nhìn thấy được từ commit đầu, không phải để lấp chỗ.
+Phân quyền, đơn vị tổ chức, vai trò, quyền hạn, audit. Chúng không bị bỏ quên —
+chúng chưa được yêu cầu, và foundation phải trả lời được "ai đang gọi" mà không
+cần bất kỳ thứ nào trong số đó.
+
+Khi một trong chúng xuất hiện, nó là một thư mục mới ở đây, và ba luật trên áp
+dụng cho nó y như với `identity/`.

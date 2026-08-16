@@ -118,10 +118,15 @@ describe('auth HTTP security', () => {
     });
 
     it('allows a read-only request without it', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/auth/me')
         .set('Cookie', [`${SESSION_COOKIE}=${TOKEN}`])
         .expect(200);
+
+      // The status alone would also be produced by a guard that let the request
+      // through and a handler that never ran. The body proves it reached the
+      // handler, which is the actual claim.
+      expect(response.body).toEqual(user);
     });
   });
 
@@ -129,16 +134,26 @@ describe('auth HTTP security', () => {
     it('answers 401 — not 403 — with no cookie', async () => {
       // 401 tells the client to log in again; 403 would send an expired
       // session to a dead end.
-      await request(app.getHttpServer()).get('/auth/me').expect(401);
+      const response = await request(app.getHttpServer()).get('/auth/me').expect(401);
+
+      expect(response.body.error.code).toBe('UNAUTHORIZED');
+      // No cookie means no lookup: an unauthenticated caller must not be able
+      // to make this endpoint touch the session store at all.
+      expect(sessions.resolve).not.toHaveBeenCalled();
     });
 
     it('answers 401 when the session no longer resolves', async () => {
       sessions.resolve.mockResolvedValue(null);
 
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .get('/auth/me')
         .set('Cookie', [`${SESSION_COOKIE}=stale`])
         .expect(401);
+
+      // Same code and message as "no cookie": a stale token must not be
+      // distinguishable from an absent one.
+      expect(response.body.error.code).toBe('UNAUTHORIZED');
+      expect(sessions.resolve).toHaveBeenCalledWith('stale');
     });
 
     it('ignores an Authorization header — the cookie is the only transport', async () => {
@@ -177,10 +192,16 @@ describe('auth HTTP security', () => {
     });
 
     it('requires authentication, so it cannot be used to probe', async () => {
-      await request(app.getHttpServer())
+      const response = await request(app.getHttpServer())
         .post('/auth/logout')
         .set('X-Requested-With', 'XMLHttpRequest')
         .expect(401);
+
+      expect(response.body.error.code).toBe('UNAUTHORIZED');
+      // The point of the guard: an anonymous caller must not be able to reach
+      // the revoke path at all. Otherwise logout becomes an oracle for whether
+      // a guessed token is live.
+      expect(auth.logout).not.toHaveBeenCalled();
     });
   });
 

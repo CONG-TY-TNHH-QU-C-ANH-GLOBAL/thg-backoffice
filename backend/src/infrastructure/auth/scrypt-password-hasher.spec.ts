@@ -62,17 +62,53 @@ describe('ScryptPasswordHasher', () => {
   it('fakeVerify costs about as much as a real verification', async () => {
     const digest = await hasher.hash(password);
 
-    const realStart = process.hrtime.bigint();
-    await hasher.verify('wrong', digest);
-    const real = Number(process.hrtime.bigint() - realStart);
+    // Best-of-N, not a single sample. Scheduler noise on a shared CI box can
+    // only ever ADD time, so the fastest run of each is the least contaminated
+    // measurement available — comparing single samples is what makes timing
+    // tests flaky.
+    const fastest = async (work: () => Promise<unknown>): Promise<number> => {
+      let best = Number.POSITIVE_INFINITY;
+      for (let run = 0; run < 3; run += 1) {
+        const start = process.hrtime.bigint();
+        await work();
+        best = Math.min(best, Number(process.hrtime.bigint() - start));
+      }
+      return best;
+    };
 
-    const fakeStart = process.hrtime.bigint();
-    await hasher.fakeVerify();
-    const fake = Number(process.hrtime.bigint() - fakeStart);
+    const real = await fastest(() => hasher.verify('wrong', digest));
+    const fake = await fastest(() => hasher.fakeVerify());
 
-    // Loose bounds on purpose: this asserts the same order of magnitude, not a
-    // stopwatch. A tight assertion here would be a flaky test on shared CI.
-    expect(fake).toBeGreaterThan(real * 0.2);
-    expect(fake).toBeLessThan(real * 5);
+    // Order of magnitude, not a stopwatch. What must not happen is fakeVerify
+    // returning immediately — that would make an unknown subject answer
+    // visibly faster than a wrong password.
+    expect(fake).toBeGreaterThan(real * 0.25);
+    expect(fake).toBeLessThan(real * 4);
+  });
+
+  describe('rejecting unverifiable digests before doing any work', () => {
+    // The parameters come out of the database and size scrypt's memory. A row
+    // claiming an absurd N must be refused, not attempted.
+    const unverifiable = [
+      ['N far above any real cost', 'scrypt$1073741824$8$1$c2FsdA==$aGFzaA=='],
+      ['N not a power of two', 'scrypt$65535$8$1$c2FsdA==$aGFzaA=='],
+      ['N of zero', 'scrypt$0$8$1$c2FsdA==$aGFzaA=='],
+      ['negative r', 'scrypt$65536$-8$1$c2FsdA==$aGFzaA=='],
+      ['absurd r', 'scrypt$65536$4096$1$c2FsdA==$aGFzaA=='],
+      ['p of zero', 'scrypt$65536$8$0$c2FsdA==$aGFzaA=='],
+      ['non-numeric parameters', 'scrypt$abc$def$ghi$c2FsdA==$aGFzaA=='],
+      ['empty salt', 'scrypt$65536$8$1$$aGFzaA=='],
+      ['empty hash', 'scrypt$65536$8$1$c2FsdA==$'],
+    ] as const;
+
+    it.each(unverifiable)('refuses %s', async (_label, digest) => {
+      const start = process.hrtime.bigint();
+      await expect(hasher.verify(password, digest)).resolves.toBe(false);
+
+      // Returned without deriving anything: a rejected digest must not cost the
+      // ~100 ms a real verification does, or it becomes its own amplifier.
+      const elapsedMs = Number(process.hrtime.bigint() - start) / 1e6;
+      expect(elapsedMs).toBeLessThan(50);
+    });
   });
 });

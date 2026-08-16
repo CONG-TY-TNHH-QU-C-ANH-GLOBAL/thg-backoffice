@@ -73,11 +73,17 @@ async function bootstrap(): Promise<void> {
   }
 
   /**
-   * Behind a reverse proxy, trust exactly one hop so `req.ip` is the client
-   * rather than the proxy — the login throttle keys on it. `true` would let a
-   * caller forge X-Forwarded-For and mint themselves a fresh budget.
+   * Whether to believe X-Forwarded-For, and for how many hops. DEFAULT 0.
+   *
+   * The login throttle keys on `req.ip`, so this decides whether that value is
+   * a fact or a request header the caller chose. Hardcoding a hop count assumes
+   * a proxy is always in front; when one is not — a container reached directly,
+   * a port exposed for debugging — the caller supplies their own address and
+   * gets a fresh throttle budget per request.
+   *
+   * A deployment that terminates behind nginx sets TRUST_PROXY_HOPS=1.
    */
-  app.set('trust proxy', 1);
+  app.set('trust proxy', config.trustProxyHops);
 
   app.useGlobalFilters(new DomainErrorFilter());
 

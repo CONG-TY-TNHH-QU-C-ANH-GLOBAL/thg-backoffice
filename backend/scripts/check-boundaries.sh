@@ -22,13 +22,21 @@ cd "$(dirname "$0")/.." || exit 2
 
 fail=0
 report() {
-  if [ -n "$2" ]; then
-    printf '\n\033[31m✘ %s\033[0m\n' "$1"
-    printf '%s\n' "$2" | sed 's/^/    /'
+  local rule="$1"
+  local violations="$2"
+
+  if [[ -n "$violations" ]]; then
+    printf '\n\033[31m✘ %s\033[0m\n' "$rule"
+    printf '%s\n' "$violations" | sed 's/^/    /'
     fail=1
   else
-    printf '\033[32m✔\033[0m %s\n' "$1"
+    printf '\033[32m✔\033[0m %s\n' "$rule"
   fi
+
+  # Explicit: this reports, it does not decide. Letting the exit status fall
+  # through from the `if` would make a violation look like a failed command to
+  # any caller that runs this with `set -e`.
+  return 0
 }
 
 # --- B1 ── core không bao giờ biết capability nào tồn tại -------------------
@@ -108,7 +116,7 @@ report "B7  foundation ↛ từ vựng nghiệp vụ" \
      | grep -vE ':[0-9]+: *(\*|//|/\*)')"
 
 echo
-if [ $fail -eq 0 ]; then
+if [[ $fail -eq 0 ]]; then
   printf '\033[32mTất cả ranh giới đều sạch.\033[0m\n'
 else
   printf '\033[31mCó vi phạm ranh giới — xem ở trên.\033[0m\n'

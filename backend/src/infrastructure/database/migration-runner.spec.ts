@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -19,10 +20,21 @@ import { MigrationRunner } from './migration-runner';
  * reading and releasing it however the run ends.
  */
 
-/** Records every statement, and can be told to fail on one of them. */
-function fakeDatabase(options: { applied?: string[]; failOn?: string } = {}) {
+/** The digest the runner records, recomputed here so tests can pin it. */
+const checksumOf = (sql: string): string =>
+  createHash('sha256').update(sql, 'utf8').digest('hex');
+
+/**
+ * Records every statement, and can be told to fail on one of them.
+ *
+ * `applied` maps a version to the checksum stored against it — `null` stands
+ * for a row written before checksums existed.
+ */
+function fakeDatabase(
+  options: { applied?: Record<string, string | null>; failOn?: string } = {},
+) {
   const statements: string[] = [];
-  const applied = options.applied ?? [];
+  const applied = options.applied ?? {};
 
   const client = {
     query: jest.fn(async (text: string, _params?: unknown[]) => {
@@ -31,8 +43,10 @@ function fakeDatabase(options: { applied?: string[]; failOn?: string } = {}) {
       if (options.failOn && text.includes(options.failOn)) {
         throw new Error('syntax error at or near "OOPS"');
       }
-      if (text.includes('SELECT version FROM schema_migrations')) {
-        return { rows: applied.map((version) => ({ version })) };
+      if (text.includes('SELECT version, checksum FROM schema_migrations')) {
+        return {
+          rows: Object.entries(applied).map(([version, checksum]) => ({ version, checksum })),
+        };
       }
       return { rows: [] };
     }),
@@ -99,9 +113,11 @@ describe('MigrationRunner', () => {
 
   // --- B. already applied --------------------------------------------------
   describe('a migration already in the ledger', () => {
+    const SQL = 'CREATE TABLE thing ();';
+
     it('is skipped without executing or recording it again', async () => {
-      const db = fakeDatabase({ applied: ['0001_create_thing.sql'] });
-      const dir = await withFiles({ '0001_create_thing.sql': 'CREATE TABLE thing ();' });
+      const db = fakeDatabase({ applied: { '0001_create_thing.sql': checksumOf(SQL) } });
+      const dir = await withFiles({ '0001_create_thing.sql': SQL });
 
       const result = await new MigrationRunner(db.pool, dir).run();
 
@@ -112,6 +128,34 @@ describe('MigrationRunner', () => {
       expect(trace.some((s) => s.includes('CREATE TABLE thing'))).toBe(false);
       expect(trace.some((s) => s.includes('INSERT INTO schema_migrations'))).toBe(false);
       expect(trace).not.toContain('BEGIN');
+    });
+
+    it('REFUSES to run when an applied file has been edited since', async () => {
+      // The dangerous case, and it is silent without this check: the runner
+      // skips the file, so the database keeps the old schema while everyone
+      // reading the repository sees the new text.
+      const db = fakeDatabase({ applied: { '0001_create_thing.sql': checksumOf(SQL) } });
+      const dir = await withFiles({
+        '0001_create_thing.sql': 'CREATE TABLE thing (id INT);',
+      });
+
+      await expect(new MigrationRunner(db.pool, dir).run()).rejects.toThrow(
+        /was modified after it was applied/,
+      );
+    });
+
+    it('backfills a checksum for a row recorded before checksums existed', async () => {
+      const db = fakeDatabase({ applied: { '0001_create_thing.sql': null } });
+      const dir = await withFiles({ '0001_create_thing.sql': SQL });
+
+      const result = await new MigrationRunner(db.pool, dir).run();
+
+      // Nothing re-runs, and the row gains a checksum — which is what makes the
+      // NEXT edit detectable.
+      expect(result.skipped).toEqual(['0001_create_thing.sql']);
+      expect(db.trace().some((s) => s.includes('UPDATE schema_migrations SET checksum'))).toBe(
+        true,
+      );
     });
   });
 
@@ -189,7 +233,7 @@ describe('MigrationRunner', () => {
 
       const trace = db.trace();
       const lock = trace.findIndex((s) => s.includes('pg_advisory_lock'));
-      const ledgerRead = trace.findIndex((s) => s.includes('SELECT version FROM schema_migrations'));
+      const ledgerRead = trace.findIndex((s) => s.includes('SELECT version, checksum FROM schema_migrations'));
 
       // Reading the ledger before locking is the race: two replicas would both
       // see the migration as unapplied and both would apply it.
@@ -206,7 +250,7 @@ describe('MigrationRunner', () => {
 
       const trace = db.trace();
       const create = trace.findIndex((s) => s.includes('CREATE TABLE IF NOT EXISTS schema_migrations'));
-      const read = trace.findIndex((s) => s.includes('SELECT version FROM schema_migrations'));
+      const read = trace.findIndex((s) => s.includes('SELECT version, checksum FROM schema_migrations'));
 
       expect(create).toBeGreaterThanOrEqual(0);
       expect(create).toBeLessThan(read);

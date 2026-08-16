@@ -1,6 +1,18 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConflictError } from '../../common/errors/domain.error';
 import { DATABASE, type Database } from '../../common/types/database.port';
 import { Identity, LOCAL_PROVIDER, User, UserStatus, normalizeSubject } from './user.entity';
+
+/**
+ * SQLSTATE 23505 — unique_violation.
+ *
+ * Read as a property rather than imported from `pg`: this file depends on the
+ * `Database` port and must not learn which driver is behind it. 23505 is a
+ * standard SQLSTATE class, not a PostgreSQL invention, so the check survives
+ * the driver changing.
+ */
+const isUniqueViolation = (error: unknown): boolean =>
+  typeof error === 'object' && error !== null && (error as { code?: unknown }).code === '23505';
 
 interface UserRow {
   id: string;
@@ -105,22 +117,33 @@ export class UserRepository {
     subject: string;
     secretHash: string;
   }): Promise<User> {
-    return this.db.transaction(async (tx) => {
-      const inserted = await tx.query<UserRow>(
-        'INSERT INTO users (display_name) VALUES ($1) RETURNING *',
-        [input.displayName],
-      );
+    try {
+      return await this.db.transaction(async (tx) => {
+        const inserted = await tx.query<UserRow>(
+          'INSERT INTO users (display_name) VALUES ($1) RETURNING *',
+          [input.displayName],
+        );
 
-      const user = inserted[0];
-      if (!user) throw new Error('INSERT INTO users returned no row');
+        const user = inserted[0];
+        if (!user) throw new Error('INSERT INTO users returned no row');
 
-      await tx.query(
-        'INSERT INTO identities (user_id, provider, subject, secret_hash) VALUES ($1, $2, $3, $4)',
-        [user.id, LOCAL_PROVIDER, normalizeSubject(input.subject), input.secretHash],
-      );
+        await tx.query(
+          'INSERT INTO identities (user_id, provider, subject, secret_hash) VALUES ($1, $2, $3, $4)',
+          [user.id, LOCAL_PROVIDER, normalizeSubject(input.subject), input.secretHash],
+        );
 
-      return toUser(user);
-    });
+        return toUser(user);
+      });
+    } catch (error) {
+      // The service checks for a duplicate first, but two callers can pass that
+      // check at the same moment and only one can win the unique index. Without
+      // this, the loser gets a raw driver error — a 500 where the honest answer
+      // is the same conflict the pre-check reports.
+      if (isUniqueViolation(error)) {
+        throw new ConflictError('That identity is already registered.');
+      }
+      throw error;
+    }
   }
 
   async subjectExists(provider: string, subject: string): Promise<boolean> {

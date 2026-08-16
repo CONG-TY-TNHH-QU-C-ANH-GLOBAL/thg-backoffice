@@ -57,6 +57,19 @@ describe('DatabaseService', () => {
     expect(Pool).toHaveBeenCalledTimes(1);
   });
 
+  it('bounds the pool and every statement it runs', () => {
+    // These four are the difference between a slow request and an outage. A
+    // pool of 10 is only a limit if connections come back, so the server-side
+    // deadlines belong here next to the size that depends on them.
+    const options = (Pool as unknown as jest.Mock).mock.calls[0][0];
+
+    expect(options.max).toBe(10);
+    expect(options.connectionTimeoutMillis).toBe(5_000);
+    expect(options.idleTimeoutMillis).toBe(30_000);
+    expect(options.options).toContain('statement_timeout=30000');
+    expect(options.options).toContain('idle_in_transaction_session_timeout=60000');
+  });
+
   describe('transaction', () => {
     it('commits and releases on success', async () => {
       const client = newClient();
@@ -115,8 +128,25 @@ describe('DatabaseService', () => {
         }),
       ).rejects.toThrow('unique constraint violated');
 
-      // And the client is still returned to the pool despite two failures.
+      // And the client is DESTROYED rather than recycled. After a failed
+      // rollback its transaction state is unknown, so handing it to the next
+      // borrower would leak an open transaction into unrelated work.
       expect(client.release).toHaveBeenCalledTimes(1);
+      expect(client.release).toHaveBeenCalledWith(true);
+    });
+
+    it('recycles the client normally when the rollback succeeds', async () => {
+      const client = newClient();
+      poolInstance.connect.mockResolvedValue(client);
+
+      await expect(
+        service.transaction(async () => {
+          throw new Error('business rule violated');
+        }),
+      ).rejects.toThrow();
+
+      // An ordinary failure is not a reason to throw away a healthy connection.
+      expect(client.release).toHaveBeenCalledWith(false);
     });
   });
 
@@ -137,6 +167,16 @@ describe('DatabaseService', () => {
 
   it('closes the pool on application shutdown', async () => {
     await service.onApplicationShutdown();
+    expect(poolInstance.end).toHaveBeenCalledTimes(1);
+  });
+
+  it('tolerates a second shutdown instead of throwing over the real reason', async () => {
+    // `pg` throws "Called end on pool more than once". Two signals arriving
+    // together would then turn a clean stop into an error that masks why the
+    // process was going down in the first place.
+    await service.onApplicationShutdown();
+    await expect(service.onApplicationShutdown()).resolves.toBeUndefined();
+
     expect(poolInstance.end).toHaveBeenCalledTimes(1);
   });
 

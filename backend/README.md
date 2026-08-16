@@ -141,8 +141,21 @@ của *frontend*, thứ API này không phục vụ và không thể biết. Ứ
 `x-powered-by`.
 
 **Session hết hạn không được dọn tự động.** Hàng `sessions` chỉ lớn dần. Chúng
-không còn hiệu lực (đã kiểm tra khi resolve), nên đây là chuyện dung lượng chứ
-không phải bảo mật — một job dọn định kỳ là đủ khi bảng đủ lớn để đáng bận tâm.
+không còn hiệu lực (`resolve` từ chối cả expired lẫn revoked), nên đây là chuyện
+dung lượng chứ không phải bảo mật.
+
+Không thêm scheduler vào ứng dụng cho việc này: một job runner kèm chuyện chọn
+leader khi chạy nhiều replica là quá nhiều bộ máy cho một câu lệnh mà cron của
+deployment vốn đã biết chạy.
+
+```sql
+DELETE FROM sessions
+ WHERE expires_at < now() - interval '30 days'
+    OR (revoked_at IS NOT NULL AND revoked_at < now() - interval '30 days');
+```
+
+Cửa sổ 30 ngày giữ lại lịch sử gần đây để còn trả lời được "phiên này kết thúc
+lúc nào, bằng cách nào". `idx_sessions_expires_at` có sẵn để câu lệnh trên rẻ.
 
 **Database sập ⇒ `/health` trả 503 và tự hồi phục khi database trở lại**, cùng
 một tiến trình, không crash-loop. Nhưng `POST /auth/login` lúc đó trả 500 chứ

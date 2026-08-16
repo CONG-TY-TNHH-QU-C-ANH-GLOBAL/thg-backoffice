@@ -23,6 +23,24 @@ interface Args {
   name?: string;
 }
 
+
+/**
+ * Keystrokes raw mode makes this reader responsible for, by character code.
+ *
+ * Codes rather than literals on purpose: a raw control character embedded in
+ * source is invisible in review and gets mangled by anything that rewrites the
+ * file — which is exactly how a terminal reader quietly stops handling Ctrl-C.
+ */
+const KEY = {
+  interrupt: 3, // Ctrl-C
+  endOfTransmission: 4, // Ctrl-D
+  backspace: 8,
+  lineFeed: 10,
+  carriageReturn: 13,
+  delete: 127, // what most terminals actually send for Backspace
+  firstPrintable: 32,
+} as const;
+
 function parseArgs(argv: string[]): Args {
   const args: Args = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -32,14 +50,81 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
+/**
+ * Reads a line from a terminal WITHOUT echoing it.
+ *
+ * Raw mode is the whole mechanism: the terminal stops drawing keystrokes and
+ * delivers them here instead, so the password never appears on screen, never
+ * survives in scrollback, and is not readable over someone's shoulder.
+ *
+ * Raw mode also disables the terminal's own line editing and signal handling,
+ * which is why backspace and Ctrl-C are handled explicitly below. Without that,
+ * a typo would be uncorrectable and Ctrl-C would leave the operator's shell
+ * stuck in raw mode after this process exited.
+ */
+function readHiddenLine(): Promise<string> {
+  const stdin = process.stdin;
+
+  return new Promise((resolve, reject) => {
+    let value = '';
+
+    const restore = (): void => {
+      stdin.setRawMode(false);
+      stdin.pause();
+      stdin.off('data', onData);
+    };
+
+    const onData = (chunk: string): void => {
+      for (const char of chunk) {
+        const key = char.charCodeAt(0);
+
+        if (key === KEY.lineFeed || key === KEY.carriageReturn || key === KEY.endOfTransmission) {
+          restore();
+          process.stdout.write('\n');
+          resolve(value);
+          return;
+        }
+
+        if (key === KEY.interrupt) {
+          // Restore BEFORE rejecting, or the shell is left in raw mode.
+          restore();
+          process.stdout.write('\n');
+          reject(new Error('Cancelled.'));
+          return;
+        }
+
+        if (key === KEY.delete || key === KEY.backspace) {
+          value = value.slice(0, -1);
+          continue;
+        }
+
+        // Printable characters only, so an arrow key does not silently become
+        // part of the password.
+        if (key >= KEY.firstPrintable) value += char;
+      }
+    };
+
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+    stdin.on('data', onData);
+  });
+}
+
 async function readPassword(): Promise<string> {
   const fromEnv = process.env['BOOTSTRAP_PASSWORD'];
   if (fromEnv) return fromEnv;
 
-  process.stdout.write('Password (input is not hidden): ');
-  return new Promise((resolve) => {
-    process.stdin.once('data', (data) => resolve(data.toString().trim()));
-  });
+  // Piped or redirected input has no terminal to echo to and no raw mode to
+  // set. Reading a plain line there is both correct and already invisible.
+  if (!process.stdin.isTTY) {
+    return new Promise((resolve) => {
+      process.stdin.once('data', (data: Buffer) => resolve(data.toString().trim()));
+    });
+  }
+
+  process.stdout.write('Password: ');
+  return (await readHiddenLine()).trim();
 }
 
 async function main(): Promise<void> {

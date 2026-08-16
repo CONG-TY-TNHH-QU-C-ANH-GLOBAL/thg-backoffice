@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { DATABASE, type Database } from '../../common/types/database.port';
 import { User, UserStatus } from '../users/user.entity';
 
@@ -14,6 +14,21 @@ import { User, UserStatus } from '../users/user.entity';
  * No refresh tokens, no rotation, no sliding expiry. Those solve problems a
  * short-lived access token creates, and a backoffice with a server-side
  * session does not have them.
+ *
+ * ⚠ DEAD ROWS ARE NEVER SWEPT, and that is a decision rather than an oversight.
+ *
+ * Expired and revoked sessions accumulate. They are inert — `resolve` rejects
+ * both, so this is table size, not access — which is why the answer is not a
+ * scheduler inside the application. Adding one would mean a job runner, a
+ * leader-election story for multiple replicas, and a failure mode, all to run a
+ * single statement that a deployment's own cron already knows how to run:
+ *
+ *   DELETE FROM sessions
+ *    WHERE expires_at < now() - interval '30 days'
+ *       OR (revoked_at IS NOT NULL AND revoked_at < now() - interval '30 days');
+ *
+ * The window keeps recent rows readable for "when did this session end, and
+ * how". `idx_sessions_expires_at` exists to make that delete cheap.
  */
 
 /** 256 bits from the CSPRNG — long enough that guessing is not a threat model. */
@@ -125,13 +140,6 @@ function hashToken(token: string): string {
 
 /** Exported for tests that need to assert the stored form, never for lookup. */
 export const __hashTokenForTest = hashToken;
-
-/** Kept for callers comparing two digests without leaking length via early exit. */
-export function digestsEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a, 'hex');
-  const right = Buffer.from(b, 'hex');
-  return left.length === right.length && timingSafeEqual(left, right);
-}
 
 /** Narrow a full user to what a session exposes. */
 export const toSessionUser = (user: User): SessionUser => ({

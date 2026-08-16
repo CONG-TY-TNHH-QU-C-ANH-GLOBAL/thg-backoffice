@@ -22,7 +22,7 @@ import { Injectable } from '@nestjs/common';
 
 const WINDOW_MS = 15 * 60 * 1000;
 
-/** Per account. Low: a real person does not miss twelve times in a row. */
+/** Per account. Low: a real person does not miss ten times in a row. */
 const MAX_PER_SUBJECT = 10;
 
 /** Per source. Higher, because an office shares one NAT address. */

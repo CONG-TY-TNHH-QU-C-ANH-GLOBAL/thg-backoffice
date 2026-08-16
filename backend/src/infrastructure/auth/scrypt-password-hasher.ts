@@ -95,6 +95,25 @@ export class ScryptPasswordHasher implements PasswordHasher {
     });
   }
 
+  /**
+   * Upper bounds on what a stored digest may ask this process to do.
+   *
+   * The parameters come out of the database, and `derive` sizes its memory from
+   * them: `maxmem` is 256·N·r. A row claiming N=2^30 would ask for terabytes,
+   * and scrypt would either throw deep inside the crypto layer or stall the
+   * event loop trying. Neither belongs on a login path, so an out-of-range
+   * digest is rejected as unverifiable before any work starts.
+   *
+   * Generous on purpose — well above the current cost, so raising COST later
+   * needs no change here.
+   */
+  private static readonly LIMITS = {
+    maxN: 2 ** 20,
+    maxR: 32,
+    maxP: 16,
+    maxHashBytes: 256,
+  } as const;
+
   private parse(
     digest: string,
   ): { cost: typeof COST; salt: Buffer; hash: Buffer } | null {
@@ -103,18 +122,25 @@ export class ScryptPasswordHasher implements PasswordHasher {
 
     const [, n, r, p, salt, hash] = parts;
     const cost = { N: Number(n), r: Number(r), p: Number(p) };
-    if (!Number.isInteger(cost.N) || !Number.isInteger(cost.r) || !Number.isInteger(cost.p)) {
-      return null;
-    }
+    const { maxN, maxR, maxP, maxHashBytes } = ScryptPasswordHasher.LIMITS;
 
-    try {
-      return {
-        cost: cost as typeof COST,
-        salt: Buffer.from(salt ?? '', 'base64'),
-        hash: Buffer.from(hash ?? '', 'base64'),
-      };
-    } catch {
-      return null;
-    }
+    // scrypt requires N to be a power of two greater than 1; anything else is
+    // rejected by the primitive itself, so catch it here where the answer is
+    // "this digest is unverifiable" rather than an exception.
+    const isPowerOfTwo = (value: number) => value > 1 && (value & (value - 1)) === 0;
+
+    if (!Number.isInteger(cost.N) || !isPowerOfTwo(cost.N) || cost.N > maxN) return null;
+    if (!Number.isInteger(cost.r) || cost.r < 1 || cost.r > maxR) return null;
+    if (!Number.isInteger(cost.p) || cost.p < 1 || cost.p > maxP) return null;
+
+    const saltBytes = Buffer.from(salt ?? '', 'base64');
+    const hashBytes = Buffer.from(hash ?? '', 'base64');
+
+    // A zero-length hash would make the comparison below trivially true for a
+    // zero-length derivation, and a zero-length salt is not a salt.
+    if (saltBytes.length === 0) return null;
+    if (hashBytes.length === 0 || hashBytes.length > maxHashBytes) return null;
+
+    return { cost: cost as typeof COST, salt: saltBytes, hash: hashBytes };
   }
 }
