@@ -14,9 +14,12 @@
     "module": "preserve",
     "baseUrl": ".",
     "paths": {
-      "@bo/core": ["libs/core/index.ts"],
-      "@bo/components": ["libs/components/index.ts"],
-      "@bo/shell": ["libs/shell/index.ts"]
+      "@bo/components": ["components/index.ts"],
+      "@bo/services": ["services/index.ts"],
+      "@bo/store": ["store/index.ts"],
+      "@bo/types": ["types/index.ts"],
+      "@bo/utils": ["utils/index.ts"],
+      "@bo/constants": ["constants/index.ts"]
     }
   },
   "angularCompilerOptions": {

@@ -6,7 +6,7 @@
     "start": "ng serve backoffice",
     "build": "ng build backoffice",
     "watch": "ng build backoffice --watch --configuration development",
-    "test": "ng test core --watch=false --browsers=ChromeHeadless && ng test shell --watch=false --browsers=ChromeHeadless"
+    "test": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "prettier": {
     "printWidth": 100,

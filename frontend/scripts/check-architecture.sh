@@ -5,15 +5,24 @@
 # Chạy: bash scripts/check-architecture.sh
 # Thoát != 0 nếu có vi phạm, nên cắm thẳng vào CI được.
 #
-# Vì sao không phải ESLint: bốn quy tắc dưới đây là quy tắc VỀ ĐƯỜNG DẪN,
+# Vì sao không phải ESLint: các quy tắc dưới đây là quy tắc VỀ ĐƯỜNG DẪN,
 # không phải về cú pháp. grep diễn đạt chúng trực tiếp và không tốn một
 # dependency nào. Thêm ESLint khi cần cảnh báo ngay lúc gõ trong editor —
-# lúc đó chép đúng bốn pattern này sang `no-restricted-imports`.
+# lúc đó chép đúng các pattern này sang `no-restricted-imports`.
+#
+# Hình dạng source được canh ở đây:
+#
+#   app/         lắp ráp ứng dụng của MỘT khách hàng
+#   features/    nghiệp vụ
+#   components/  UI tái sử dụng   ─┐
+#   services/    hạ tầng Angular   │  nền tảng — khách hàng B dùng lại
+#   store/       trạng thái toàn app │  nguyên vẹn, không sửa dòng nào
+#   types/ utils/ constants/ styles/ ─┘
 
 cd "$(dirname "$0")/.." || exit 2
 
 fail=0
-report() { # $1 = tên rule, $2 = kết quả grep
+report() {
   if [ -n "$2" ]; then
     printf '\n\033[31m✘ %s\033[0m\n' "$1"
     printf '%s\n' "$2" | sed 's/^/    /'
@@ -23,89 +32,56 @@ report() { # $1 = tên rule, $2 = kết quả grep
   fi
 }
 
-# --- R1 ── features không với tới chrome, cũng không với feature khác -------
-# Feature phải sống được mà không biết ứng dụng bọc quanh nó trông thế nào.
-report "R1  features ↛ shell" \
-  "$(grep -rn "@bo/shell" --include=*.ts apps/*/src/app/features 2>/dev/null)"
+# --- R1 ── nền tảng không bao giờ biết tới nghiệp vụ hay khách hàng ---------
+# Đây là quy tắc quan trọng nhất: nó chính là điều kiện để khách hàng B tái sử
+# dụng components/services/store/types/utils mà không kéo theo code của THG.
+FOUNDATION="components services store types utils constants"
+report "R1  nền tảng ↛ features · app" \
+  "$(grep -rnE "from '(\.\./)*(features|app)/|from '@bo/features" --include=*.ts $FOUNDATION 2>/dev/null)"
 
-# --- R2 ── components là leaf tuyệt đối --------------------------------------
-# Thuộc tính quý nhất của foundation: component không biết gì ngoài chính nó.
-# Mất thuộc tính này là mất khả năng tái sử dụng sang khách khác.
-# Chỉ soi dòng `import`, không soi comment.
-report "R2  components ↛ mọi lib khác" \
-  "$(grep -rn "^import .*'@bo/\|from '@bo/" --include=*.ts libs/components 2>/dev/null)"
+# --- R2 ── components là UI thuần ------------------------------------------
+# Một component tái sử dụng không được biết Department, Role hay Capability.
+# Nó nhận dữ liệu chung và trả sự kiện chung.
+report "R2  components ↛ từ vựng tổ chức" \
+  "$(grep -rnE "\b(Department|Role|Capability|AccessService|SessionStore|OrgStore)\b" \
+       --include=*.ts components 2>/dev/null | grep -v '\.spec\.ts')"
 
-# --- R2b ── components không ĐIỀU KHIỂN điều hướng ---------------------------
-# Phân biệt có chủ đích: `RouterLink` là điều hướng KHAI BÁO — một card trỏ
-# tới đâu đó là chuyện bình thường, cấm nó chỉ ép API thành gượng gạo.
-# `inject(Router)` là ĐIỀU KHIỂN LUỒNG — đó mới là thứ biến component thành
-# một mảnh của ứng dụng cụ thể, và là lý do `Shell` không nằm ở đây.
-report "R2b components ↛ inject(Router)" \
-  "$(grep -rn "inject(Router)\|: Router\b" --include=*.ts libs/components 2>/dev/null)"
+# --- R3 ── luật phân quyền phải sạch để backend chép lại --------------------
+report "R3  services/access/rules ↛ Angular · rxjs" \
+  "$(grep -rn "@angular/\|from 'rxjs" --include=*.ts services/access/rules 2>/dev/null)"
 
-# --- R3 ── luật phân quyền phải sạch để backend chép lại ---------------------
-# Chỉ áp dụng khi libs/core/access/rules/ đã tồn tại (phase 4).
-if [ -d libs/core/access/rules ]; then
-  report "R3  access/rules ↛ Angular · rxjs" \
-    "$(grep -rn "@angular/\|from 'rxjs" --include=*.ts libs/core/access/rules 2>/dev/null)"
-else
-  printf '\033[33m–\033[0m R3  access/rules chưa tồn tại (phase 4)\n'
-fi
-
-# --- R4 ── foundation không được biết tên khách nào --------------------------
-# Phép thử THG portability, dạng kiểm tra được bằng máy.
-# `\bTHG\b` phân biệt hoa thường, nếu không `authGuard` cũng dính vì chứa "thG".
-report "R4  libs ↛ tenant · theme · tên khách" \
-  "$(grep -rnE "from '.*(tenant|/theme)/|\bTHG\b" --include=*.ts --include=*.scss libs 2>/dev/null)"
-
-# --- R5 ── không màu thô trong component và chrome ---------------------------
-# Đây là ranh giới component ⟂ visual language. Màu phải đi qua token, nếu
-# không thì khách đổi theme sẽ đổi được mọi thứ TRỪ chỗ hardcode.
-report "R5  components ↛ màu hex thô" \
-  "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts libs/components 2>/dev/null \
-     | grep -v "icon.paths" | grep -v "tokens")"
-
-report "R5b shell ↛ màu hex thô" \
-  "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts libs/shell 2>/dev/null)"
-
-# --- R5c ── trong libs/, màu THÔ chỉ được sống ở tokens/ --------------------
-# Đây là bất biến gọn nhất diễn đạt được ranh giới component ⟂ visual language:
-# một giá trị màu nằm ngoài tokens/ là một quyết định thị giác mà khách hàng
-# không với tới được.
-report "R5c hex trong libs/ chỉ ở tokens/" \
-  "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts libs 2>/dev/null \
-     | grep -v "^libs/tokens/" | grep -v "icon.paths")"
-
-# --- R8 ── foundation không đặt tên một webfont cụ thể ----------------------
-# Chọn chữ là bản sắc của khách. Foundation dừng ở stack hệ điều hành, và
-# không bao giờ tự tải font.
-report "R8  libs ↛ webfont cụ thể" \
-  "$(grep -rniE "'(Inter|Roboto Flex|Manrope|Poppins|Montserrat)'" \
-       --include=*.scss --include=*.ts libs 2>/dev/null)"
-
-# --- R6 ── libs không bao giờ ngó sang apps ---------------------------------
-report "R6  libs ↛ apps" \
-  "$(grep -rn "apps/" --include=*.ts --include=*.scss libs 2>/dev/null)"
-
-# --- R6b ── foundation không mang từ vựng nghiệp vụ của khách ---------------
-# Kể cả trong comment và test-double. Một khách hàng mới đọc libs/ không được
-# thấy CRM của khách hàng cũ làm ví dụ — đó là cách "generic" âm thầm trở
+# --- R4 ── nền tảng không mang tên hay từ vựng của khách hàng ---------------
+# Kể cả trong comment và test-double. Một khách hàng mới đọc components/ không
+# được thấy CRM của khách hàng cũ làm ví dụ — đó là cách "generic" âm thầm trở
 # thành "generic cho đúng một công ty".
-# Ngoại lệ đã biết và ghi nhận: copy tiếng Việt trong shell (topbar, sidebar,
-# trang lỗi). Đó là khoá locale, không phải khoá nghiệp vụ, và gỡ nó cần một
-# cơ chế i18n — việc của phase sau, không phải phase này.
-report "R6b libs ↛ từ vựng nghiệp vụ của khách" \
-  "$(grep -rniE "khách hàng|phân công|potential.customer|\blead(s)?\b|\bcrm\b|dropship|fulfill" \
-       --include=*.ts --include=*.scss libs 2>/dev/null)"
+# Ngoại lệ đã biết và ghi nhận: copy tiếng Việt trong app/layout. Đó là khoá
+# locale, không phải khoá nghiệp vụ, và gỡ nó cần một cơ chế i18n.
+report "R4  nền tảng ↛ tên · từ vựng khách hàng" \
+  "$(grep -rnE "\bTHG\b|khách hàng|phân công|potential.customer|\bcrm\b|dropship|fulfill" \
+       --include=*.ts --include=*.scss $FOUNDATION styles 2>/dev/null)"
 
-# --- R7 ── core chạm components ĐÚNG một chỗ --------------------------------
-# `composition/` render plugin đã đăng ký, nên LazyWidget cần <bo-skeleton> làm
-# placeholder — một cạnh core -> components có thật và không né được nếu không
-# đổi giao diện. Chấp nhận, nhưng khoanh lại: phần còn lại của core phải sạch,
-# nếu không thì "core không biết gì về UI" mất hết ý nghĩa.
-report "R7  core ↛ components (ngoài composition/)" \
-  "$(grep -rn "from '@bo/components" --include=*.ts libs/core 2>/dev/null \
-     | grep -v "^libs/core/composition/")"
+# --- R5 ── màu THÔ chỉ được sống ở styles/tokens ----------------------------
+# Bất biến gọn nhất diễn đạt được ranh giới component ⟂ visual language: một
+# giá trị màu nằm ngoài tokens/ là quyết định thị giác khách hàng không với tới.
+report "R5  hex chỉ ở styles/tokens" \
+  "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts \
+       components services store types utils app/layout app/navigation app/routing 2>/dev/null \
+     | grep -v "icon.paths")"
+
+# --- R6 ── nền tảng không đặt tên một webfont cụ thể ------------------------
+# Chọn chữ là bản sắc của khách. Foundation dừng ở stack hệ điều hành.
+report "R6  nền tảng ↛ webfont cụ thể" \
+  "$(grep -rniE "'(Inter|Roboto Flex|Manrope|Poppins|Montserrat)'" \
+       --include=*.scss --include=*.ts $FOUNDATION styles/tokens 2>/dev/null)"
+
+# --- R7 ── utils là hàm thuần ----------------------------------------------
+# Bất cứ thứ gì cần inject là một service và thuộc services/.
+report "R7  utils ↛ Angular DI" \
+  "$(grep -rn "@angular/\|@Injectable\|inject(" --include=*.ts utils 2>/dev/null)"
+
+# --- R8 ── feature không với sang feature khác ------------------------------
+report "R8  feature ↛ feature khác" \
+  "$(grep -rn "from '\.\./\.\./\(organization\|worklist\|leads\)/" --include=*.ts features 2>/dev/null)"
 
 echo
 if [ $fail -eq 0 ]; then

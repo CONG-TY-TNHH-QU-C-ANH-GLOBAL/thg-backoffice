@@ -5,7 +5,6 @@
     "packageManager": "npm",
     "analytics": false
   },
-  "newProjectRoot": "libs",
   "projects": {
     "backoffice": {
       "projectType": "application",
@@ -15,26 +14,28 @@
           "changeDetection": "OnPush"
         }
       },
-      "root": "apps/backoffice",
-      "sourceRoot": "apps/backoffice/src",
-      "prefix": "app",
+      "root": "",
+      "sourceRoot": "",
+      "prefix": "bo",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "browser": "apps/backoffice/src/main.ts",
+            "browser": "main.ts",
+            "index": "index.html",
             "polyfills": ["zone.js"],
-            "tsConfig": "apps/backoffice/tsconfig.app.json",
+            "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "apps/backoffice/public"
+                "input": "assets",
+                "output": "/"
               }
             ],
-            "styles": ["apps/backoffice/src/styles.scss"],
+            "styles": ["styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/tokens", "libs/components"]
+              "includePaths": ["styles/tokens", "components"]
             }
           },
           "configurations": {
@@ -64,12 +65,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "configurations": {
-            "production": {
-              "buildTarget": "backoffice:build:production"
-            },
-            "development": {
-              "buildTarget": "backoffice:build:development"
-            }
+            "production": { "buildTarget": "backoffice:build:production" },
+            "development": { "buildTarget": "backoffice:build:development" }
           },
           "defaultConfiguration": "development"
         },
@@ -80,91 +77,11 @@
           "builder": "@angular/build:karma",
           "options": {
             "polyfills": ["zone.js", "zone.js/testing"],
-            "tsConfig": "apps/backoffice/tsconfig.spec.json",
+            "tsConfig": "tsconfig.spec.json",
             "inlineStyleLanguage": "scss",
-            "assets": [
-              {
-                "glob": "**/*",
-                "input": "apps/backoffice/public"
-              }
-            ],
-            "styles": ["apps/backoffice/src/styles.scss"],
+            "styles": ["styles.scss"],
             "stylePreprocessorOptions": {
-              "includePaths": ["libs/tokens", "libs/components"]
-            }
-          }
-        }
-      }
-    },
-
-    "core": {
-      "projectType": "library",
-      "root": "libs/core",
-      "sourceRoot": "libs/core",
-      "prefix": "bo",
-      "schematics": {
-        "@schematics/angular:component": {
-          "style": "scss",
-          "changeDetection": "OnPush"
-        }
-      },
-      "architect": {
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "tsConfig": "libs/core/tsconfig.spec.json",
-            "polyfills": ["zone.js", "zone.js/testing"]
-          }
-        }
-      }
-    },
-
-    "components": {
-      "projectType": "library",
-      "root": "libs/components",
-      "sourceRoot": "libs/components",
-      "prefix": "bo",
-      "schematics": {
-        "@schematics/angular:component": {
-          "style": "scss",
-          "changeDetection": "OnPush"
-        }
-      },
-      "architect": {
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "tsConfig": "libs/components/tsconfig.spec.json",
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "inlineStyleLanguage": "scss",
-            "stylePreprocessorOptions": {
-              "includePaths": ["libs/tokens", "libs/components"]
-            }
-          }
-        }
-      }
-    },
-
-    "shell": {
-      "projectType": "library",
-      "root": "libs/shell",
-      "sourceRoot": "libs/shell",
-      "prefix": "bo",
-      "schematics": {
-        "@schematics/angular:component": {
-          "style": "scss",
-          "changeDetection": "OnPush"
-        }
-      },
-      "architect": {
-        "test": {
-          "builder": "@angular/build:karma",
-          "options": {
-            "tsConfig": "libs/shell/tsconfig.spec.json",
-            "polyfills": ["zone.js", "zone.js/testing"],
-            "inlineStyleLanguage": "scss",
-            "stylePreprocessorOptions": {
-              "includePaths": ["libs/tokens", "libs/components"]
+              "includePaths": ["styles/tokens", "components"]
             }
           }
         }
