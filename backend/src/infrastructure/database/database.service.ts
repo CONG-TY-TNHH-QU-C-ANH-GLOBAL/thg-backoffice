@@ -83,7 +83,16 @@ export class DatabaseService implements OnModuleInit, OnApplicationShutdown {
       await client.query('COMMIT');
       return result;
     } catch (error) {
-      await client.query('ROLLBACK');
+      // The ROLLBACK is guarded because it can fail on its own — a dropped
+      // connection is the usual reason, and it is often the same reason the
+      // work failed. Letting that second error escape would replace "unique
+      // constraint violated" with "connection terminated" in the logs, hiding
+      // the fact anyone actually needs.
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        this.logger.error(`ROLLBACK failed: ${(rollbackError as Error).message}`);
+      }
       throw error;
     } finally {
       client.release();
