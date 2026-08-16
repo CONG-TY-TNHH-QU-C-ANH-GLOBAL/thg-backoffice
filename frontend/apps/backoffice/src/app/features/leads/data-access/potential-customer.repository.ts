@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { UserContext } from '@bo/core';
-import { PotentialCustomer, PotentialCustomerStatus, TeamWorkload } from '../models/potential-customer';
+import { PotentialCustomer, PotentialCustomerStatus, TeamWorkload } from '../domain/potential-customer';
 
 export interface PotentialCustomerQuery {
   /** Omit for every department the caller may reach — used by org-wide views. */

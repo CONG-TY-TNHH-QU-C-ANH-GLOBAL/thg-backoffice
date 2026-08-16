@@ -3,7 +3,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { AccessService, SessionStore } from '@bo/core';
 import { Card, EmptyState, Icon, IconButton, Radial, Select, Skeleton } from '@bo/components';
-import { Metric } from '../../models/overview';
+import { Metric } from '../../domain/overview';
 import { OverviewRepository } from '../../data-access/overview.repository';
 
 /**

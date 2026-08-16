@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Badge, BadgeTone, EmptyState, Icon, RelativeTimePipe, accentVars } from '@bo/components';
-import { ApprovalItem, ApprovalPriority } from '../models/overview';
+import { ApprovalItem, ApprovalPriority } from '../domain/overview';
 
 const PRIORITY: Record<ApprovalPriority, { label: string; tone: BadgeTone }> = {
   high: { label: 'Cao', tone: 'danger' },

@@ -6,7 +6,7 @@
  * modules and reuses everything under @bo/*.
  */
 
-export * from './models/potential-customer';
+export * from './domain/potential-customer';
 export * from './data-access/potential-customer.repository';
 export * from './data-access/fixture-potential-customer.repository';
 

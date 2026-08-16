@@ -1,4 +1,4 @@
-import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../../models/overview';
+import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../../domain/overview';
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 

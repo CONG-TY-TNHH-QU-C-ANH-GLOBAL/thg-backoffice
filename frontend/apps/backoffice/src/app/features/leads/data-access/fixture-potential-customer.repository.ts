@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { UserContext, canAssignRecords, visibleRecords } from '@bo/core';
-import { PotentialCustomer, TeamWorkload } from '../models/potential-customer';
+import { PotentialCustomer, TeamWorkload } from '../domain/potential-customer';
 import { PotentialCustomerQuery, PotentialCustomerRepository } from './potential-customer.repository';
 import { POTENTIAL_CUSTOMERS, SALES_TEAM } from './fixtures/potential-customers.fixtures';
 

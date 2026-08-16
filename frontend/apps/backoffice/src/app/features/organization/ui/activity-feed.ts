@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import { OrgStore } from '@bo/core';
 import { EmptyState, Icon, RelativeTimePipe, accentVars } from '@bo/components';
-import { ActivityItem } from '../models/overview';
+import { ActivityItem } from '../domain/overview';
 
 /** Recent activity, labelled with the department it came from. */
 @Component({

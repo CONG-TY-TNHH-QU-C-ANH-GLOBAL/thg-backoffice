@@ -1,5 +1,5 @@
 import { BadgeTone } from '@bo/components';
-import { OnboardingStage, PotentialCustomerStatus, SourceChannel } from '../models/potential-customer';
+import { OnboardingStage, PotentialCustomerStatus, SourceChannel } from '../domain/potential-customer';
 
 /** Business vocabulary lives with the capability, never in the design system. */
 

@@ -3,7 +3,7 @@
  * documents, reports, requests). Tenant-neutral.
  */
 
-export * from './models/work-item';
+export * from './domain/work-item';
 export * from './data-access/work-item.repository';
 export * from './data-access/fixture-work-item.repository';
 

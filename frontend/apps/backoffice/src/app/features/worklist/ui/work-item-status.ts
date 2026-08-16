@@ -1,5 +1,5 @@
 import { BadgeTone } from '@bo/components';
-import { WorkItemPriority, WorkItemStatus } from '../models/work-item';
+import { WorkItemPriority, WorkItemStatus } from '../domain/work-item';
 
 /**
  * Business status → visual tone. Lives in the capability, not the ui-kit, so

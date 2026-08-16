@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 import { UserContext } from '@bo/core';
-import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../models/overview';
+import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../domain/overview';
 import { OverviewRepository } from './overview.repository';
 import {
   ACTIVITY,

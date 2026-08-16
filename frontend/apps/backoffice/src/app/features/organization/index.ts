@@ -4,7 +4,7 @@
  * capabilities exist at runtime.
  */
 
-export * from './models/overview';
+export * from './domain/overview';
 export * from './data-access/overview.repository';
 export * from './data-access/fixture-overview.repository';
 

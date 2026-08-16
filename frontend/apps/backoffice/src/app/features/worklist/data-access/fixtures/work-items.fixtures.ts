@@ -1,4 +1,4 @@
-import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../models/work-item';
+import { WorkItem, WorkItemPriority, WorkItemStatus } from '../../domain/work-item';
 
 const hours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
 

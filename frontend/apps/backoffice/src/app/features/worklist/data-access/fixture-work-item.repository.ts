@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of } from 'rxjs';
 import { UserContext, visibleRecords } from '@bo/core';
-import { WorkItem } from '../models/work-item';
+import { WorkItem } from '../domain/work-item';
 import { WorkItemQuery, WorkItemRepository } from './work-item.repository';
 import { WORK_ITEMS } from './fixtures/work-items.fixtures';
 

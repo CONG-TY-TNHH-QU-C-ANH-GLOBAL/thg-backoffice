@@ -11,7 +11,7 @@ import {
   ProgressBar,
   TableColumn,
 } from '@bo/components';
-import { PotentialCustomer, PotentialCustomerStatus } from '../../models/potential-customer';
+import { PotentialCustomer, PotentialCustomerStatus } from '../../domain/potential-customer';
 import { PotentialCustomerRepository } from '../../data-access/potential-customer.repository';
 import { CustomerStatusBadge } from '../../ui/customer-status.badge';
 import { ONBOARDING, ONBOARDING_STEPS, SOURCE, isFollowUpDue, isStale } from '../../ui/customer-vocabulary';

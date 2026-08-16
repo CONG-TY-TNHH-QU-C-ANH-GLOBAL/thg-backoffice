@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { EmptyState, Icon, accentVars } from '@bo/components';
-import { Suggestion } from '../models/overview';
+import { Suggestion } from '../domain/overview';
 
 @Component({
   selector: 'bo-suggestion-list',

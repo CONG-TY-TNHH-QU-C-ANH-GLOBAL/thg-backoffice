@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { Badge } from '@bo/components';
-import { PotentialCustomerStatus } from '../models/potential-customer';
+import { PotentialCustomerStatus } from '../domain/potential-customer';
 import { STATUS } from './customer-vocabulary';
 
 @Component({

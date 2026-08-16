@@ -3,7 +3,7 @@ import {
   PotentialCustomer,
   PotentialCustomerStatus,
   SourceChannel,
-} from '../../models/potential-customer';
+} from '../../domain/potential-customer';
 
 const days = (d: number) => new Date(Date.now() + d * 86_400_000).toISOString();
 

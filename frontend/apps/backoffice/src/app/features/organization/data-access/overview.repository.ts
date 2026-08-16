@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { UserContext } from '@bo/core';
-import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../models/overview';
+import { ActivityItem, ApprovalItem, Metric, Suggestion } from '../domain/overview';
 
 /**
  * Everything the workspace surfaces need. Each method takes the acting user so

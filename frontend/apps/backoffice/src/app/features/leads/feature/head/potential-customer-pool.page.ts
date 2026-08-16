@@ -13,7 +13,7 @@ import {
   Input,
   TableColumn,
 } from '@bo/components';
-import { PotentialCustomer } from '../../models/potential-customer';
+import { PotentialCustomer } from '../../domain/potential-customer';
 import { PotentialCustomerRepository } from '../../data-access/potential-customer.repository';
 import { SALES_TEAM } from '../../data-access/fixtures/potential-customers.fixtures';
 import { CustomerStatusBadge } from '../../ui/customer-status.badge';

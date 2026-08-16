@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { UserContext } from '@bo/core';
-import { WorkItem } from '../models/work-item';
+import { WorkItem } from '../domain/work-item';
 
 export interface WorkItemQuery {
   departmentId?: string;

@@ -5,7 +5,7 @@ import { SessionStore, WorkspaceContext } from '@bo/core';
 import { Button, Card, EmptyState, Icon } from '@bo/components';
 import { PotentialCustomerRepository } from '../../data-access/potential-customer.repository';
 import { SOURCE } from '../../ui/customer-vocabulary';
-import { PotentialCustomer } from '../../models/potential-customer';
+import { PotentialCustomer } from '../../domain/potential-customer';
 
 /**
  * DEPARTMENT_HEAD widget — the unassigned queue, front and centre on their

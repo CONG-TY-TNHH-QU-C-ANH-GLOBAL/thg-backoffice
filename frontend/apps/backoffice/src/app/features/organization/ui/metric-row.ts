@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { StatCard } from '@bo/components';
-import { Metric } from '../models/overview';
+import { Metric } from '../domain/overview';
 
 /** Responsive row of headline metrics. Auto-fits so 4 or 5 both look right. */
 @Component({

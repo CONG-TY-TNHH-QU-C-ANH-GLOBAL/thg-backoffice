@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { Badge, CellDef, DataTable, DateTimePipe, Icon, TableColumn } from '@bo/components';
-import { WorkItem } from '../models/work-item';
+import { WorkItem } from '../domain/work-item';
 import { PRIORITY_LABEL, STATUS_LABEL, isOverdue } from './work-item-status';
 
 const COLUMNS: TableColumn[] = [
