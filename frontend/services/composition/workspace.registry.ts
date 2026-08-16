@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { CapabilityKey } from '@bo/types';
-import { Role } from '../access/rules/scope';
+import { Role } from '@bo/types';
 import {
   WORKSPACE_REGISTRY,
   WORKSPACE_WIDGETS,

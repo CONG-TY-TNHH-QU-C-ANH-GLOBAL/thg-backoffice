@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { CapabilityKey } from '@bo/types';
-import { Role, WorkspaceRegistry, WorkspaceWidget } from '@bo/services';
+import { WorkspaceRegistry, WorkspaceWidget } from '@bo/services';
+import { Role } from '@bo/types';
 import { LazyWidget } from '../lazy-widget/lazy-widget';
 
 /**

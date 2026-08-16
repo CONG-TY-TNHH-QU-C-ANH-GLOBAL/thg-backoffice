@@ -4,7 +4,7 @@ import { CapabilityDescriptor, CapabilityPresentation } from '../composition/cap
 import { CapabilityKey, Department, UserContext } from '@bo/types';
 import { OrgStore } from '../../store/organization/org.store';
 import { SessionStore } from '../../store/session/session.store';
-import { Role } from './rules/scope';
+import { Role } from '@bo/types';
 import { canAccessUnit, canConfigureUnit, visibleUnits } from './rules/unit-access';
 
 /**

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { CapabilityKey } from '@bo/types';
-import { Role } from '../access/rules/scope';
+import { Role } from '@bo/types';
 import { CAPABILITY_REGISTRY, CapabilityDescriptor, NavigationContribution } from './capability.model';
 
 /** Read-only view over the capabilities the composition root registered. */

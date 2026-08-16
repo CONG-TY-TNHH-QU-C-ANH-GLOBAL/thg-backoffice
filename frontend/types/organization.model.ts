@@ -1,4 +1,4 @@
-import { Role } from '../services/access/rules/scope';
+import { Role } from './access-scope';
 
 /**
  * Organization model. Deliberately free of any tenant's business vocabulary —

@@ -1,5 +1,5 @@
 import { InjectionToken, Provider } from '@angular/core';
-import { Role } from '@bo/services';
+import { Role } from '@bo/types';
 
 /**
  * Fixed navigation entries a tenant wants in the sidebar — overview, inbox,

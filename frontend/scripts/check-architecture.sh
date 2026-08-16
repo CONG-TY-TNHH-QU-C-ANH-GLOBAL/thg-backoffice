@@ -83,6 +83,12 @@ report "R7  utils ↛ Angular DI" \
 report "R8  feature ↛ feature khác" \
   "$(grep -rn "from '\.\./\.\./\(organization\|worklist\|leads\)/" --include=*.ts features 2>/dev/null)"
 
+# --- I1-I3 ── đồ thị phụ thuộc: chiều đi, portability, vòng ------------------
+# grep chỉ thấy từng cạnh một. Một cạnh có thể hợp lệ khi nhìn riêng mà vẫn
+# khép thành vòng khi nhìn cả đồ thị, nên phần này cần đi hết graph.
+echo
+if node scripts/check-imports.mjs; then :; else fail=1; fi
+
 echo
 if [ $fail -eq 0 ]; then
   printf '\033[32mTất cả ranh giới đều sạch.\033[0m\n'

@@ -1,5 +1,5 @@
 /**
- * Access scope — the most primitive type in the system. Imports nothing.
+ * Access scope — the most primitive shape in the system. Imports nothing.
  *
  * These three values are not job titles, they are **data radii**: how far a
  * person can see. That is the only thing an authorization mechanism needs to
@@ -14,15 +14,9 @@
  * *do*, which is capabilities, not scope). Display labels belong to the tenant,
  * never here.
  *
- * The TYPE itself lives in types/access-scope.ts — `UserContext` needs it, and
- * keeping it here made types/ import services/ and closed a cycle through the
- * whole foundation. What stays here is the runtime that goes with it.
+ * The TYPE lives in types/ and the runtime helpers that go with it live in
+ * services/access/rules/scope.ts. Splitting them is not pedantry: `UserContext`
+ * needs this type, so keeping it in services/ made types/ import services/ and
+ * put a cycle through the whole foundation.
  */
-import { Role } from '@bo/types';
-
-export const ROLES: readonly Role[] = ['SUPERADMIN', 'DEPARTMENT_HEAD', 'MEMBER'];
-
-/** Narrows an arbitrary string, e.g. one written in a template. */
-export function isRole(value: string): value is Role {
-  return (ROLES as readonly string[]).includes(value);
-}
+export type Role = 'SUPERADMIN' | 'DEPARTMENT_HEAD' | 'MEMBER';
