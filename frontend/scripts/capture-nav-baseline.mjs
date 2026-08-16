@@ -14,7 +14,7 @@ import puppeteer from 'puppeteer-core';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const ORIGIN = 'http://localhost:4200';
-const OUT = join(process.cwd(), '..', '__screenshots__', 'phase-8-hardening');
+const OUT = join(process.cwd(), '..', '__screenshots__', 'phase-8-baseline');
 
 /** The three acceptance personas. */
 const PERSONAS = [
