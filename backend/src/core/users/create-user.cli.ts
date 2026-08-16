@@ -76,7 +76,13 @@ function readHiddenLine(): Promise<string> {
 
     const onData = (chunk: string): void => {
       for (const char of chunk) {
-        const key = char.charCodeAt(0);
+        // `for…of` walks a string by CODE POINT, so `char` can be a surrogate
+        // pair. charCodeAt would report only its leading half; codePointAt
+        // reports the character. Both agree on every key handled below — those
+        // are all under 128 — so this changes nothing except being right about
+        // what `char` is. Never undefined: the loop only yields non-empty
+        // characters.
+        const key = char.codePointAt(0)!;
 
         if (key === KEY.lineFeed || key === KEY.carriageReturn || key === KEY.endOfTransmission) {
           restore();
