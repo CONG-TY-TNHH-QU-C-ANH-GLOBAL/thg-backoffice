@@ -13,16 +13,16 @@ import {
   effect,
   inject,
   input,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter } from 'rxjs';
-import { BRANDING } from '@bo/services';
-import { Icon } from '@bo/components';
+import { Icon } from '../../ui/icon/icon';
 import { accentVars } from '@bo/utils';
-import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.service';
+import { NavBrand, NavExpansion, NavGroup, NavigationModel } from '../navigation.model';
 
 /**
  * Navigation is assembled from data only: tenant-declared fixed items plus the
@@ -52,7 +52,7 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
  * always-tinted accent tile, and a spine its children hang from.
  */
 @Component({
-  selector: 'bo-sidebar',
+  selector: 'bo-navigation-sidebar',
   imports: [Icon, RouterLink, RouterLinkActive],
   // The rail is the scrolling container, and CDK's scroll dispatcher only
   // tracks elements it has been told about — without this the tooltip does not
@@ -62,13 +62,13 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
   host: { '[class.rail]': 'rail()', '[class.open]': 'open()' },
   template: `
     <!-- Chrome, not navigation: its own surface above the tinted nav field. -->
-    <a class="brand" routerLink="/" [attr.aria-label]="branding.productName">
-      <span class="brand__mark" [style]="brandVars">{{ branding.monogram }}</span>
-      <span class="brand__name">{{ branding.productName }}</span>
+    <a class="brand" routerLink="/" [attr.aria-label]="brand().name">
+      <span class="brand__mark" [style]="brandVars()">{{ brand().monogram }}</span>
+      <span class="brand__name">{{ brand().name }}</span>
     </a>
 
     <nav class="nav" aria-label="Điều hướng chính" (keydown)="onKeydown($event)">
-      @if (nav.primary().length) {
+      @if (model().primary.length) {
         <!--
           Decorative headings for the eye only — the list is already labelled
           for a screen reader by the nav's own aria-label, so repeating it here
@@ -77,7 +77,7 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
         <p class="nav__section" aria-hidden="true">Chung</p>
       }
       <ul class="nav__list">
-        @for (item of nav.primary(); track item.link) {
+        @for (item of model().primary; track item.link) {
           <li>
             <a
               class="nav__row"
@@ -112,18 +112,18 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
         }
       </ul>
 
-      @if (nav.departments().length) {
+      @if (model().groups.length) {
         <hr class="nav__rule" />
-        <p class="nav__section" aria-hidden="true">Phòng ban</p>
+        <p class="nav__section" aria-hidden="true">{{ model().groupsLabel }}</p>
         <ul class="nav__list">
-          @for (group of nav.departments(); track group.department.id) {
+          @for (group of model().groups; track group.id) {
             <!--
               The accent comes from the department's own domain data and is set
               once here, so the tile, the spine and the active child all read the
               same two custom properties without any component branching on a
               colour name.
             -->
-            <li class="dept" [style]="accentFor(group.department.id)">
+            <li class="dept" [style]="accentFor(group.id)">
               <div class="dept__header">
                 <!--
                   The disclosure is a SIBLING of the link and stays after it in
@@ -137,19 +137,19 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
                   [routerLink]="group.link"
                   routerLinkActive=""
                   [ariaCurrentWhenActive]="isCurrentGroup(group) ? 'page' : undefined"
-                  (mouseenter)="showTip($event, group.department.name)"
-                  (focus)="showTip($event, group.department.name)"
+                  (mouseenter)="showTip($event, group.label)"
+                  (focus)="showTip($event, group.label)"
                   (mouseleave)="hideTip()"
                   (blur)="hideTip()"
                 >
                   <span class="nav__slot">
                     <bo-icon
-                      [name]="group.department.icon"
+                      [name]="group.icon"
                       [size]="rail() ? 20 : 16"
                       [strokeWidth]="isInsideGroup(group) ? 2.1 : 1.8"
                     />
                   </span>
-                  <span class="nav__label">{{ group.department.name }}</span>
+                  <span class="nav__label">{{ group.label }}</span>
                 </a>
 
                 @if (group.children.length) {
@@ -157,9 +157,9 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
                     class="dept__disclosure"
                     type="button"
                     [attr.aria-expanded]="isExpanded(group)"
-                    [attr.aria-controls]="panelId(group.department.id)"
+                    [attr.aria-controls]="panelId(group.id)"
                     [attr.aria-label]="
-                      (isExpanded(group) ? 'Thu gọn ' : 'Mở rộng ') + group.department.name
+                      (isExpanded(group) ? 'Thu gọn ' : 'Mở rộng ') + group.label
                     "
                     (click)="toggle(group)"
                   >
@@ -176,7 +176,7 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
                 <!-- Rendered but hidden, so aria-controls always resolves. -->
                 <ul
                   class="dept__children"
-                  [id]="panelId(group.department.id)"
+                  [id]="panelId(group.id)"
                   [hidden]="!isExpanded(group)"
                 >
                   @for (child of group.children; track child.link) {
@@ -200,11 +200,11 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
         </ul>
       }
 
-      @if (nav.secondary().length) {
+      @if (model().secondary.length) {
         <hr class="nav__rule" />
-        <p class="nav__section nav__section--system" aria-hidden="true">Hệ thống</p>
+        <p class="nav__section nav__section--system" aria-hidden="true">{{ model().secondaryLabel }}</p>
         <ul class="nav__list nav__list--system">
-          @for (item of nav.secondary(); track item.link) {
+          @for (item of model().secondary; track item.link) {
             <li>
               <a
                 class="nav__row nav__row--system"
@@ -239,8 +239,8 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
     </nav>
 
     <footer>
-      <p>{{ branding.productName }} {{ branding.version }}</p>
-      <p>{{ branding.copyright }}</p>
+      <p>{{ brand().name }} {{ brand().version }}</p>
+      <p>{{ brand().copyright }}</p>
     </footer>
 
     <!--
@@ -257,15 +257,25 @@ import { DepartmentNavGroup, NavigationService } from '../navigation/navigation.
       <div class="tip" aria-hidden="true">{{ tipLabel() }}</div>
     </ng-template>
   `,
-  styleUrl: './sidebar.scss',
+  styleUrl: './navigation-sidebar.scss',
 })
-export class Sidebar {
+export class NavigationSidebar {
   readonly rail = input(false);
   readonly open = input(false);
 
-  protected readonly nav = inject(NavigationService);
-  protected readonly branding = inject(BRANDING);
-  protected readonly brandVars = accentVars(this.branding.accent);
+  /** Everything drawn below. See navigation.model.ts — no business types here. */
+  readonly model = input.required<NavigationModel>();
+  readonly brand = input.required<NavBrand>();
+
+  /**
+   * Which groups the user has explicitly toggled. Held by the caller, not here,
+   * so the choice survives this component being re-created — and so the
+   * navigation stays a pure function of its inputs.
+   */
+  readonly expansion = input<NavExpansion>({});
+  readonly groupToggled = output<string>();
+
+  protected readonly brandVars = computed(() => accentVars(this.brand().accent));
 
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly router = inject(Router);
@@ -279,7 +289,7 @@ export class Sidebar {
   private tipAnchor?: HTMLElement;
 
   /**
-   * Every destination is current only for its own URL. Departments are the one
+   * Every destination is current only for its own URL. Groups are the one
    * exception, handled by `isCurrentGroup` below.
    */
   protected readonly exactRoute = { exact: true };
@@ -287,20 +297,18 @@ export class Sidebar {
   /**
    * `accentVars` builds a fresh object per call, and a style binding handed a
    * new reference every change detection re-writes the element each time. The
-   * departments only change when the persona does, so the map is computed once
-   * per that change and the bindings stay reference-stable.
+   * groups only change when the model does, so the map is computed once per
+   * that change and the bindings stay reference-stable.
    */
-  private readonly deptVars = computed(
+  private readonly groupVars = computed(
     () =>
-      new Map(
-        this.nav
-          .departments()
-          .map((group) => [group.department.id, accentVars(group.department.accent)]),
+      new Map<string, Record<string, string>>(
+        this.model().groups.map((group) => [group.id, accentVars(group.accent)]),
       ),
   );
 
-  protected accentFor(departmentId: string): Record<string, string> | null {
-    return this.deptVars().get(departmentId) ?? null;
+  protected accentFor(groupId: string): Record<string, string> | null {
+    return this.groupVars().get(groupId) ?? null;
   }
 
   constructor() {
@@ -337,7 +345,7 @@ export class Sidebar {
    * nothing would be marked at all, so the group link stands in for the page
    * inside it.
    */
-  protected isCurrentGroup(group: DepartmentNavGroup): boolean {
+  protected isCurrentGroup(group: NavGroup): boolean {
     const path = this.router.url.split(/[?#]/)[0];
     if (path === group.link) return true;
 
@@ -352,7 +360,7 @@ export class Sidebar {
    * may be `aria-current`. The tile is emphasis, not a current marker, so it has
    * to stay lit while a child is the current page.
    */
-  protected isInsideGroup(group: DepartmentNavGroup): boolean {
+  protected isInsideGroup(group: NavGroup): boolean {
     const path = this.router.url.split(/[?#]/)[0];
     return path === group.link || path.startsWith(group.link + '/');
   }
@@ -387,12 +395,12 @@ export class Sidebar {
     return `nav-group-${groupId}`;
   }
 
-  protected isExpanded(group: DepartmentNavGroup): boolean {
-    return this.nav.isExpanded(group.department.id, group.expandedByDefault);
+  protected isExpanded(group: NavGroup): boolean {
+    return this.expansion()[group.id] ?? group.expandedByDefault;
   }
 
-  protected toggle(group: DepartmentNavGroup): void {
-    this.nav.toggle(group.department.id, group.expandedByDefault);
+  protected toggle(group: NavGroup): void {
+    this.groupToggled.emit(group.id);
   }
 
   protected showTip(event: Event, label: string): void {

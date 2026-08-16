@@ -14,7 +14,7 @@ import puppeteer from 'puppeteer-core';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const ORIGIN = 'http://localhost:4200';
-const OUT = join(process.cwd(), '..', '__screenshots__', 'phase-8-baseline');
+const OUT = join(process.cwd(), '..', '__screenshots__', 'phase-8-after');
 
 /** The three acceptance personas. */
 const PERSONAS = [
@@ -53,7 +53,7 @@ function measure() {
   const root = getComputedStyle(document.documentElement);
   const token = (n) => root.getPropertyValue(n).trim() || null;
 
-  const sidebar = document.querySelector('bo-sidebar');
+  const sidebar = document.querySelector('bo-navigation-sidebar, bo-sidebar');
   const topbar = document.querySelector('bo-topbar');
   const rows = [...document.querySelectorAll('.nav__row')];
   const current = document.querySelector('[aria-current="page"]');
@@ -205,7 +205,7 @@ for (const persona of PERSONAS) {
         await page.screenshot({ path: join(OUT, `${name}-open.png`) });
         const mo = await page.evaluate(measure);
         const trap = await page.evaluate(() => {
-          const sb = document.querySelector('bo-sidebar');
+          const sb = document.querySelector('bo-navigation-sidebar, bo-sidebar');
           return {
             role: sb?.getAttribute('role') ?? null,
             ariaModal: sb?.getAttribute('aria-modal') ?? null,
@@ -221,7 +221,7 @@ for (const persona of PERSONAS) {
         await page.keyboard.press('Escape');
         await settle(500);
         const afterEscape = await page.evaluate(() => ({
-          open: document.querySelector('bo-sidebar')?.classList.contains('open') ?? null,
+          open: document.querySelector('bo-navigation-sidebar, bo-sidebar')?.classList.contains('open') ?? null,
           scrimPresent: !!document.querySelector('.scrim'),
           activeElement: document.activeElement?.tagName ?? null,
           activeLabel: document.activeElement?.getAttribute('aria-label') ?? null,

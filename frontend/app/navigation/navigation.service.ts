@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Department } from '@bo/types';
 import { SessionStore } from '@bo/store';
 import { AccessService, CapabilityRegistry } from '@bo/services';
+import { NavGroup, NavigationModel } from '@bo/components';
 import { SHELL_NAVIGATION, ShellNavItem } from './navigation.model';
 
 export interface DepartmentNavGroup {
@@ -13,9 +14,13 @@ export interface DepartmentNavGroup {
 }
 
 /**
- * Turns runtime data into the sidebar. Three sources, no business knowledge:
- * tenant-declared fixed items, the departments this persona may enter, and the
- * capability presentations registered for this persona.
+ * THE MAPPING. This is the seam that keeps the navigation component reusable.
+ *
+ * Everything business-shaped stops here: departments, roles, capability
+ * presentations, tenant configuration. What leaves is a NavigationModel — plain
+ * labels, icons and links that any customer's product could produce.
+ *
+ * Move this file to another project and it is the only one you rewrite.
  */
 @Injectable({ providedIn: 'root' })
 export class NavigationService {
@@ -77,6 +82,9 @@ export class NavigationService {
    */
   private readonly overrides = signal<Record<string, boolean>>({});
 
+  /** Read by the navigation component; it holds no state of its own. */
+  readonly expansion = this.overrides.asReadonly();
+
   isExpanded(groupId: string, fallback: boolean): boolean {
     return this.overrides()[groupId] ?? fallback;
   }
@@ -85,4 +93,30 @@ export class NavigationService {
     const next = !this.isExpanded(groupId, fallback);
     this.overrides.update((state) => ({ ...state, [groupId]: next }));
   }
+
+  /** Toggle by id alone — the component reports which group, not what state. */
+  toggleById(groupId: string): void {
+    const group = this.departments().find((g) => g.department.id === groupId);
+    this.toggle(groupId, group?.expandedByDefault ?? false);
+  }
+
+  /**
+   * The application's data, restated in the navigation's own vocabulary.
+   * Section headings are the tenant's words, so they travel with the model.
+   */
+  readonly model = computed<NavigationModel>(() => ({
+    primary: this.primary(),
+    groups: this.departments().map<NavGroup>((group) => ({
+      id: group.department.id,
+      label: group.department.name,
+      icon: group.department.icon,
+      link: group.link,
+      accent: group.department.accent,
+      children: group.children,
+      expandedByDefault: group.expandedByDefault,
+    })),
+    groupsLabel: this.config?.groupsLabel ?? '',
+    secondary: this.secondary(),
+    secondaryLabel: this.config?.secondaryLabel ?? '',
+  }));
 }

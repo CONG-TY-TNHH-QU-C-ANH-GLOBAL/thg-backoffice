@@ -9,6 +9,9 @@ import { ShellNavigation } from '../navigation/navigation.model';
  * counter once the numbers come from real data.
  */
 export const THG_NAVIGATION: ShellNavigation = {
+  groupsLabel: 'Phòng ban',
+  secondaryLabel: 'Hệ thống',
+
   primary: [
     { label: 'Tổng quan', icon: 'layout-dashboard', link: '/' },
     { label: 'Việc của tôi', icon: 'briefcase', link: '/my-work', badge: 12 },

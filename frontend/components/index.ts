@@ -36,5 +36,8 @@ export * from './feedback/skeleton/skeleton';
 export * from './feedback/progress-bar/progress-bar';
 export * from './feedback/radial/radial';
 
+// --- navigation -------------------------------------------------------------
+export * from './navigation';
+
 // --- pipes ------------------------------------------------------------------
 export * from './pipes/format.pipe';

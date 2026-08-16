@@ -10,14 +10,16 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs';
-import { Sidebar } from './sidebar';
+import { NavigationSidebar } from '@bo/components';
+import { BRANDING } from '@bo/services';
+import { NavigationService } from '../navigation/navigation.service';
 import { Topbar } from './topbar';
 import { Viewport } from './viewport';
 
 /** Application chrome: sidebar, topbar, routed content. */
 @Component({
   selector: 'bo-shell',
-  imports: [RouterOutlet, Sidebar, Topbar, CdkTrapFocus],
+  imports: [RouterOutlet, NavigationSidebar, Topbar, CdkTrapFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '[attr.data-layout]': 'layout()' },
   template: `
@@ -33,7 +35,11 @@ import { Viewport } from './viewport';
       trap and dialog semantics. On desktop it is ordinary page furniture and
       carries neither — the same component, two different contracts.
     -->
-    <bo-sidebar
+    <bo-navigation-sidebar
+      [model]="nav.model()"
+      [brand]="brand"
+      [expansion]="nav.expansion()"
+      (groupToggled)="nav.toggleById($event)"
       [rail]="layout() === 'rail'"
       [open]="drawerOpen()"
       [cdkTrapFocus]="modal()"
@@ -58,6 +64,22 @@ import { Viewport } from './viewport';
 })
 export class Shell {
   private readonly router = inject(Router);
+  protected readonly nav = inject(NavigationService);
+
+  /**
+   * The tenant's identity, restated in the navigation's vocabulary. One more
+   * place where a business word stops before it reaches a reusable component.
+   */
+  protected readonly brand = (() => {
+    const b = inject(BRANDING);
+    return {
+      name: b.productName,
+      monogram: b.monogram,
+      accent: b.accent,
+      version: b.version,
+      copyright: b.copyright,
+    };
+  })();
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   protected readonly layout = inject(Viewport).layout;

@@ -26,10 +26,17 @@ export interface ShellNavItem {
 }
 
 export interface ShellNavigation {
-  /** Above the department list. */
+  /** Above the unit list. */
   primary: ShellNavItem[];
-  /** Below the department list. */
+  /** Below the unit list. */
   secondary: ShellNavItem[];
+  /**
+   * Headings for the two sections. The customer's words — "Phòng ban",
+   * "Departments", "Studios" — so they live in tenant configuration and not in
+   * the navigation component.
+   */
+  groupsLabel: string;
+  secondaryLabel: string;
 }
 
 export const SHELL_NAVIGATION = new InjectionToken<ShellNavigation>('SHELL_NAVIGATION');

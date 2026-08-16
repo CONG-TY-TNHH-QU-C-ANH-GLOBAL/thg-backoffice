@@ -29,8 +29,7 @@
             "assets": [
               {
                 "glob": "**/*",
-                "input": "assets",
-                "output": "/"
+                "input": "assets"
               }
             ],
             "styles": ["styles.scss"],
