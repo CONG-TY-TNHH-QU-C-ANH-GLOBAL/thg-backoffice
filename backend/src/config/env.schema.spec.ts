@@ -99,8 +99,22 @@ describe('validateEnv', () => {
   });
 
   it('reports every problem at once, not one per restart', () => {
-    expect(() => validateEnv({ NODE_ENV: 'staging', PORT: 'abc' })).toThrow(
-      /NODE_ENV[\s\S]*PORT[\s\S]*DATABASE_URL|DATABASE_URL[\s\S]*/,
-    );
+    // Three separate mistakes: an invalid enum, an uncoercible number, and a
+    // missing required value. Someone setting this up for the first time should
+    // see all three, not discover them one restart at a time.
+    let message = '';
+    try {
+      validateEnv({ NODE_ENV: 'staging', PORT: 'abc' });
+    } catch (error) {
+      message = (error as Error).message;
+    }
+
+    // Asserted independently rather than as one ordered regex. The previous
+    // form was `/NODE_ENV.*PORT.*DATABASE_URL|DATABASE_URL.*/`, whose second
+    // alternative matched on DATABASE_URL alone — so the test passed while
+    // reporting exactly the one problem it existed to prove was not alone.
+    expect(message).toContain('NODE_ENV');
+    expect(message).toContain('PORT');
+    expect(message).toContain('DATABASE_URL');
   });
 });

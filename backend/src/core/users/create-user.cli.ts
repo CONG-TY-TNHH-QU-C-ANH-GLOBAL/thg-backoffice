@@ -37,9 +37,18 @@ const KEY = {
   backspace: 8,
   lineFeed: 10,
   carriageReturn: 13,
+  escape: 27, // introduces an ANSI sequence — see CSI_FINAL
   delete: 127, // what most terminals actually send for Backspace
   firstPrintable: 32,
 } as const;
+
+/**
+ * A CSI sequence (`ESC [ … final`) ends at its FINAL byte, 0x40–0x7E. The bytes
+ * before it are parameters and intermediates and carry no terminator, which is
+ * why the whole sequence has to be consumed as one unit rather than filtered
+ * byte by byte.
+ */
+const CSI_FINAL = { min: 0x40, max: 0x7e } as const;
 
 function parseArgs(argv: string[]): Args {
   const args: Args = {};
@@ -62,11 +71,20 @@ function parseArgs(argv: string[]): Args {
  * a typo would be uncorrectable and Ctrl-C would leave the operator's shell
  * stuck in raw mode after this process exited.
  */
-function readHiddenLine(): Promise<string> {
+export function readHiddenLine(): Promise<string> {
   const stdin = process.stdin;
 
   return new Promise((resolve, reject) => {
     let value = '';
+
+    /**
+     * Where we are inside an ANSI escape sequence.
+     *
+     * Held across data events, not per chunk: a terminal is free to split
+     * `ESC [ A` over two reads, and a parser that reset at the chunk boundary
+     * would leak the tail of a split sequence into the password.
+     */
+    let mode: 'normal' | 'escaped' | 'csi' | 'ss3' = 'normal';
 
     const restore = (): void => {
       stdin.setRawMode(false);
@@ -83,6 +101,42 @@ function readHiddenLine(): Promise<string> {
         // what `char` is. Never undefined: the loop only yields non-empty
         // characters.
         const key = char.codePointAt(0)!;
+
+        // Mid-sequence: swallow parameter and intermediate bytes until the
+        // final one. Dropping only the ESC would leave the rest — pressing Up
+        // arrow would silently put "[A" in the password.
+        if (mode === 'csi') {
+          if (key >= CSI_FINAL.min && key <= CSI_FINAL.max) mode = 'normal';
+          continue;
+        }
+
+        // SS3 (`ESC O …`, the function keys) is exactly one byte long.
+        if (mode === 'ss3') {
+          mode = 'normal';
+          continue;
+        }
+
+        if (mode === 'escaped') {
+          if (char === '[') {
+            mode = 'csi';
+            continue;
+          }
+          if (char === 'O') {
+            mode = 'ss3';
+            continue;
+          }
+
+          // Neither introducer, so the ESC was a bare Escape keypress and this
+          // character is an ordinary one. Fall through and handle it normally
+          // rather than eating it — silently losing a typed character is the
+          // same class of bug as leaking "[A" in.
+          mode = 'normal';
+        }
+
+        if (key === KEY.escape) {
+          mode = 'escaped';
+          continue;
+        }
 
         if (key === KEY.lineFeed || key === KEY.carriageReturn || key === KEY.endOfTransmission) {
           restore();
@@ -166,4 +220,9 @@ async function main(): Promise<void> {
   }
 }
 
-void main();
+// Only when this file IS the command being run. Without the guard, importing it
+// — which the spec for the reader above has to do — would boot Nest and try to
+// create a user as a side effect of loading a module.
+if (require.main === module) {
+  void main();
+}

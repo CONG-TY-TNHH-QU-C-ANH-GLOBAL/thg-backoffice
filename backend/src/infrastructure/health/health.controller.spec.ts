@@ -8,6 +8,62 @@ import { AppModule } from '../../app.module';
 import { HealthController } from './health.controller';
 
 /**
+ * Every module reachable from `root` that registers an APP_GUARD, by name.
+ *
+ * Static: reads the decorator metadata Nest already stores rather than
+ * instantiating anything, so this costs no configuration and no database.
+ *
+ * Walks breadth-first with a `seen` set, which is what keeps two real shapes
+ * from breaking it — a module imported by several others is visited once, and a
+ * circular import pair does not loop forever.
+ */
+function modulesRegisteringGlobalGuards(root: unknown): string[] {
+  const seen = new Set<unknown>();
+  const queue: unknown[] = [root];
+  const offenders: string[] = [];
+
+  const nameOf = (target: unknown): string =>
+    (target as { name?: string })?.name ?? String(target);
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current === undefined || current === null || seen.has(current)) continue;
+    seen.add(current);
+
+    // `forwardRef(() => X)` — unwrap and re-queue the module it points at.
+    const forward = (current as { forwardRef?: () => unknown }).forwardRef;
+    if (typeof forward === 'function') {
+      queue.push(forward());
+      continue;
+    }
+
+    // A DynamicModule (`SomeModule.forRoot(…)`) carries its metadata on the
+    // object; a plain class carries it as reflect metadata.
+    const asDynamic = current as { module?: unknown; imports?: unknown[]; providers?: unknown[] };
+    const isDynamic = typeof current === 'object' && asDynamic.module !== undefined;
+
+    const providers: unknown[] = isDynamic
+      ? (asDynamic.providers ?? [])
+      : (Reflect.getMetadata('providers', current as object) ?? []);
+
+    const imports: unknown[] = isDynamic
+      ? (asDynamic.imports ?? [])
+      : (Reflect.getMetadata('imports', current as object) ?? []);
+
+    for (const provider of providers) {
+      if ((provider as { provide?: unknown })?.provide === APP_GUARD) {
+        offenders.push(nameOf(isDynamic ? asDynamic.module : current));
+      }
+    }
+
+    for (const imported of imports) queue.push(imported);
+    if (isDynamic) queue.push(asDynamic.module);
+  }
+
+  return offenders;
+}
+
+/**
  * Both branches matter, and the down branch matters more.
  *
  * A health endpoint that answers 200 whatever happens is an endpoint that
@@ -84,11 +140,13 @@ describe('HealthController', () => {
      * show. Checked statically against the real AppModule rather than by
      * booting it — booting pulls in configuration and a database pool, and this
      * suite is meant to run on a machine with neither.
+     *
+     * Walked across IMPORTS too, not just AppModule's own providers: APP_GUARD
+     * is global wherever it is registered, so a guard added inside any imported
+     * module would protect this endpoint just as effectively while leaving the
+     * composition root untouched.
      */
-    const providers: Array<{ provide?: unknown }> =
-      Reflect.getMetadata('providers', AppModule) ?? [];
-
-    expect(providers.filter((provider) => provider?.provide === APP_GUARD)).toEqual([]);
+    expect(modulesRegisteringGlobalGuards(AppModule)).toEqual([]);
 
     // And it answers with no cookie and no headers at all.
     const response = await request(app.getHttpServer()).get('/health').expect(200);
