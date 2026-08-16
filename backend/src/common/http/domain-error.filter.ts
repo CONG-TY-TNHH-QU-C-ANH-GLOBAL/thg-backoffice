@@ -5,11 +5,13 @@ import {
   DomainError,
   ForbiddenError,
   NotFoundError,
+  UnauthorizedError,
   ValidationError,
 } from '../errors/domain.error';
 
 const STATUS_BY_ERROR = new Map<Function, HttpStatus>([
   [NotFoundError, HttpStatus.NOT_FOUND],
+  [UnauthorizedError, HttpStatus.UNAUTHORIZED],
   [ForbiddenError, HttpStatus.FORBIDDEN],
   [ValidationError, HttpStatus.UNPROCESSABLE_ENTITY],
   [ConflictError, HttpStatus.CONFLICT],

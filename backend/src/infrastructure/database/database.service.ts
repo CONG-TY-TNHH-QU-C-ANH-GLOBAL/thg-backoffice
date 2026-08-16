@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
-import { Pool, PoolClient, QueryResultRow } from 'pg';
+import { Pool, QueryResultRow } from 'pg';
 import { AppConfig } from '../../config/app.config';
+import type { Database, DatabaseQuery } from '../../common/types/database.port';
 
 /**
  * The single PostgreSQL connection pool for this deployment.
@@ -10,7 +11,7 @@ import { AppConfig } from '../../config/app.config';
  * isolation boundary.
  */
 @Injectable()
-export class DatabaseService implements OnModuleInit, OnApplicationShutdown {
+export class DatabaseService implements Database, OnModuleInit, OnApplicationShutdown {
   private readonly logger = new Logger(DatabaseService.name);
   private readonly pool: Pool;
 
@@ -60,11 +61,8 @@ export class DatabaseService implements OnModuleInit, OnApplicationShutdown {
     this.logger.log('PostgreSQL pool closed');
   }
 
-  async query<T extends QueryResultRow = QueryResultRow>(
-    text: string,
-    params?: readonly unknown[],
-  ): Promise<T[]> {
-    const result = await this.pool.query<T>(text, params as unknown[]);
+  async query<T>(text: string, params?: readonly unknown[]): Promise<T[]> {
+    const result = await this.pool.query<T & QueryResultRow>(text, params as unknown[]);
     return result.rows;
   }
 
@@ -75,11 +73,21 @@ export class DatabaseService implements OnModuleInit, OnApplicationShutdown {
    * a client by forgetting to release it — the failure mode that silently
    * exhausts the pool under load.
    */
-  async transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+  async transaction<T>(work: (tx: DatabaseQuery) => Promise<T>): Promise<T> {
     const client = await this.pool.connect();
+
+    // The callback receives the port, not the driver's client: core modules
+    // stay free of `pg` even inside a transaction.
+    const tx: DatabaseQuery = {
+      query: async <R>(sql: string, params?: readonly unknown[]) => {
+        const result = await client.query<R & QueryResultRow>(sql, params as unknown[]);
+        return result.rows;
+      },
+    };
+
     try {
       await client.query('BEGIN');
-      const result = await work(client);
+      const result = await work(tx);
       await client.query('COMMIT');
       return result;
     } catch (error) {

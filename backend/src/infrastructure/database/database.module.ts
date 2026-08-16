@@ -1,4 +1,5 @@
 import { Global, Module } from '@nestjs/common';
+import { DATABASE } from '../../common/types/database.port';
 import { DatabaseService } from './database.service';
 
 /**
@@ -11,7 +12,12 @@ import { DatabaseService } from './database.service';
  */
 @Global()
 @Module({
-  providers: [DatabaseService],
-  exports: [DatabaseService],
+  providers: [
+    DatabaseService,
+    // Bind the port to this adapter. Core modules inject DATABASE and never
+    // name a driver.
+    { provide: DATABASE, useExisting: DatabaseService },
+  ],
+  exports: [DatabaseService, DATABASE],
 })
 export class DatabaseModule {}

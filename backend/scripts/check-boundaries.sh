@@ -16,6 +16,10 @@
 
 cd "$(dirname "$0")/.." || exit 2
 
+# Bốn rule B1-B4 chỉ soi CÂU LỆNH IMPORT, không soi toàn văn file. Comment
+# giải thích ranh giới đương nhiên phải nhắc tên các tầng — một checker vấp vào
+# chính tài liệu của nó là checker sẽ bị tắt.
+
 fail=0
 report() {
   if [ -n "$2" ]; then
@@ -37,12 +41,12 @@ report "B1  core ↛ capabilities" \
 # Nếu core import infrastructure thì đổi provider auth phải mổ vào foundation.
 # Đấu dây là việc của app.module.ts, không phải của core.
 report "B2  core ↛ infrastructure" \
-  "$(grep -rn "infrastructure/" --include=*.ts src/core 2>/dev/null)"
+  "$(grep -rnE "^\s*(import|export).*from '[^']*infrastructure/" --include=*.ts src/core 2>/dev/null)"
 
 # --- B3 ── common là primitive, không phải sọt rác --------------------------
 # common/ mà biết core hay capability thì nó không còn cross-cutting nữa.
 report "B3  common ↛ core · capabilities · infrastructure" \
-  "$(grep -rnE "(core|capabilities|infrastructure)/" --include=*.ts src/common 2>/dev/null)"
+  "$(grep -rnE "^\s*(import|export).*from '[^']*(core|capabilities|infrastructure)/" --include=*.ts src/common 2>/dev/null)"
 
 # --- B4 ── infrastructure là công nghệ, không phải nghiệp vụ ----------------
 report "B4  infrastructure ↛ capabilities" \

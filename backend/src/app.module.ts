@@ -2,6 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './infrastructure/database/database.module';
 import { HealthModule } from './infrastructure/health/health.module';
+import { AuthModule } from './infrastructure/auth/auth.module';
+import { IdentityModule } from './core/identity/identity.module';
+import { UsersModule } from './core/users/users.module';
 
 /**
  * THE COMPOSITION ROOT — the only file that knows the whole system.
@@ -23,6 +26,17 @@ import { HealthModule } from './infrastructure/health/health.module';
  * to be useful on its own, or it is not a foundation.
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, HealthModule],
+  imports: [
+    // config + technology adapters first: core modules consume the ports they
+    // register, and nothing here consumes core.
+    ConfigModule,
+    DatabaseModule,
+    AuthModule,
+    HealthModule,
+
+    // the foundation
+    UsersModule,
+    IdentityModule,
+  ],
 })
 export class AppModule {}

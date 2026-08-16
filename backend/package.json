@@ -14,7 +14,8 @@
     "check": "bash scripts/check-boundaries.sh",
     "migrate": "ts-node -T src/infrastructure/database/migrate.cli.ts",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "user:create": "ts-node -T src/core/users/create-user.cli.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.0",
@@ -67,6 +68,10 @@
       "^@common/(.*)$": "<rootDir>/src/common/$1",
       "^@infrastructure/(.*)$": "<rootDir>/src/infrastructure/$1",
       "^@config/(.*)$": "<rootDir>/src/config/$1"
-    }
+    },
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/migrations"
+    ]
   }
 }

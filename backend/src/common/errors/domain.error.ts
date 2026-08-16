@@ -25,6 +25,17 @@ export class NotFoundError extends DomainError {
 }
 
 /**
+ * Not authenticated: no credential, or one that no longer resolves.
+ *
+ * Distinct from ForbiddenError because clients act on the difference — 401
+ * means "log in again", 403 means "logging in again will not help". Collapsing
+ * them sends a user with an expired session to a dead end.
+ */
+export class UnauthorizedError extends DomainError {
+  readonly code = 'UNAUTHORIZED';
+}
+
+/**
  * Authenticated, but not allowed.
  *
  * Note for whoever implements authorization: returning this for a resource the
