@@ -9,6 +9,13 @@ import {
   ValidationError,
 } from '../errors/domain.error';
 
+/**
+ * Looked up by the error's own name rather than by class identity, so a module
+ * can define its own DomainError without this file importing it — importing
+ * from `core/` here would make `common/` depend on the layer above it.
+ */
+const STATUS_BY_CODE = new Map<string, HttpStatus>([['TOO_MANY_ATTEMPTS', HttpStatus.TOO_MANY_REQUESTS]]);
+
 const STATUS_BY_ERROR = new Map<Function, HttpStatus>([
   [NotFoundError, HttpStatus.NOT_FOUND],
   [UnauthorizedError, HttpStatus.UNAUTHORIZED],
@@ -30,10 +37,20 @@ export class DomainErrorFilter implements ExceptionFilter {
 
   catch(error: DomainError, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
-    const status = STATUS_BY_ERROR.get(error.constructor) ?? HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      STATUS_BY_ERROR.get(error.constructor) ??
+      STATUS_BY_CODE.get(error.code) ??
+      HttpStatus.INTERNAL_SERVER_ERROR;
 
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(`Unmapped domain error ${error.name}: ${error.message}`);
+    }
+
+    // Retry-After is the part a well-behaved client acts on; without it the
+    // 429 is just a refusal with no guidance.
+    const retryAfter = (error as DomainError & { retryAfterSeconds?: unknown }).retryAfterSeconds;
+    if (typeof retryAfter === 'number') {
+      response.setHeader('Retry-After', String(retryAfter));
     }
 
     response.status(status).json({

@@ -2,6 +2,7 @@ import { UnauthorizedError } from '../../common/errors/domain.error';
 import { LOCAL_PROVIDER, User } from '../users/user.entity';
 import { UserRepository } from '../users/user.repository';
 import { AuthenticationService } from './authentication.service';
+import { LoginThrottleService } from './login-throttle.service';
 import type { PasswordHasher } from './password-hasher.port';
 import { SessionService } from './session.service';
 
@@ -51,6 +52,7 @@ describe('AuthenticationService', () => {
     service = new AuthenticationService(
       users as unknown as UserRepository,
       sessions as unknown as SessionService,
+      new LoginThrottleService(),
       hasher,
     );
   });

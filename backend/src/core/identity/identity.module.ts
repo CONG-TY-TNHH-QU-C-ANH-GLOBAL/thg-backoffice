@@ -3,6 +3,8 @@ import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthGuard } from './auth.guard';
 import { AuthenticationService } from './authentication.service';
+import { CsrfGuard } from './csrf.guard';
+import { LoginThrottleService } from './login-throttle.service';
 import { SessionService } from './session.service';
 
 /**
@@ -15,7 +17,7 @@ import { SessionService } from './session.service';
 @Module({
   imports: [UsersModule],
   controllers: [AuthController],
-  providers: [SessionService, AuthenticationService, AuthGuard],
+  providers: [SessionService, AuthenticationService, AuthGuard, CsrfGuard, LoginThrottleService],
   exports: [SessionService, AuthGuard],
 })
 export class IdentityModule {}

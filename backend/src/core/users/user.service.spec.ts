@@ -1,4 +1,4 @@
-import { ConflictError, NotFoundError } from '../../common/errors/domain.error';
+import { ConflictError, NotFoundError, ValidationError } from '../../common/errors/domain.error';
 import type { PasswordHasher } from '../identity/password-hasher.port';
 import { LOCAL_PROVIDER } from './user.entity';
 import { UserRepository } from './user.repository';
@@ -39,7 +39,7 @@ describe('UserService', () => {
     users.subjectExists.mockResolvedValue(true);
 
     await expect(
-      service.createWithPassword({ displayName: 'X', subject: 'a@example.com', password: 'p' }),
+      service.createWithPassword({ displayName: 'X', subject: 'a@example.com', password: 'a valid passphrase' }),
     ).rejects.toBeInstanceOf(ConflictError);
 
     expect(users.createWithLocalIdentity).not.toHaveBeenCalled();
@@ -49,7 +49,7 @@ describe('UserService', () => {
     users.subjectExists.mockResolvedValue(true);
 
     await expect(
-      service.createWithPassword({ displayName: 'X', subject: 'a@example.com', password: 'p' }),
+      service.createWithPassword({ displayName: 'X', subject: 'a@example.com', password: 'a valid passphrase' }),
     ).rejects.toThrow();
 
     expect(hasher.hash).not.toHaveBeenCalled();
@@ -59,11 +59,28 @@ describe('UserService', () => {
     await service.createWithPassword({
       displayName: 'A',
       subject: '  A@Example.COM ',
-      password: 'p',
+      password: 'a valid passphrase',
     });
 
     expect(users.subjectExists).toHaveBeenCalledWith(LOCAL_PROVIDER, 'a@example.com');
     expect(users.createWithLocalIdentity.mock.calls[0][0].subject).toBe('a@example.com');
+  });
+
+  it('applies the password policy before touching the database', async () => {
+    await expect(
+      service.createWithPassword({ displayName: 'A', subject: 'a@b.c', password: 'short' }),
+    ).rejects.toBeInstanceOf(ValidationError);
+
+    expect(users.subjectExists).not.toHaveBeenCalled();
+    expect(hasher.hash).not.toHaveBeenCalled();
+  });
+
+  it('never silently truncates an over-long password', async () => {
+    // Truncating would create the account with a shorter secret than the user
+    // believes they chose, and nobody would find out.
+    await expect(
+      service.createWithPassword({ displayName: 'A', subject: 'a@b.c', password: 'x'.repeat(2000) }),
+    ).rejects.toBeInstanceOf(ValidationError);
   });
 
   it('raises NotFound rather than returning null for a missing user', async () => {

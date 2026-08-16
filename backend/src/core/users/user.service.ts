@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConflictError, NotFoundError } from '../../common/errors/domain.error';
+import { assertPasswordAcceptable } from '../identity/password.policy';
 import { PASSWORD_HASHER, type PasswordHasher } from '../identity/password-hasher.port';
 import { LOCAL_PROVIDER, User, normalizeSubject } from './user.entity';
 import { UserRepository } from './user.repository';
@@ -23,6 +24,10 @@ export class UserService {
     subject: string;
     password: string;
   }): Promise<User> {
+    // Policy lives at the authentication boundary, not on the User model —
+    // tightening it later must not make existing rows invalid.
+    assertPasswordAcceptable(input.password);
+
     const subject = normalizeSubject(input.subject);
 
     // Checked before hashing so a duplicate does not cost 100 ms of scrypt.
