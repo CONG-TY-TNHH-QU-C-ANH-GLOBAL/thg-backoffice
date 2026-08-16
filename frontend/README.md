@@ -6,9 +6,26 @@ proven end to end, client-side only, no backend involved.
 ```bash
 npm start           # dev server on :4200
 npm run build       # production app bundle
-npm run build:libs  # package every library with ng-packagr (dependency order)
 npm test            # access-rule specs (needs Chrome)
 ```
+
+> **⚠️ Tài liệu dưới đây mô tả cấu trúc `projects/` CŨ và đang lạc hậu.**
+>
+> Repo đang chuyển sang `apps/` + `libs/` (nhánh
+> `refactor/foundation-architecture`). Các ý tưởng kiến trúc — capability
+> manifest, hai tầng phân quyền, repository pattern — **vẫn đúng nguyên vẹn**;
+> chỉ đường dẫn và tên alias là đã đổi:
+>
+> | Cũ | Mới |
+> |---|---|
+> | `projects/backoffice/src/app` | `apps/backoffice/src/app` |
+> | `projects/platform/domain` · `@backoffice/domain` | `libs/core` · `@bo/core` |
+> | `projects/platform/ui-kit` · `@backoffice/ui-kit` | `libs/components` · `@bo/components` |
+> | `projects/platform/shell` · `@backoffice/shell` | `libs/shell` · `@bo/shell` |
+> | `projects/capabilities/*` · `@backoffice/capability-*` | `apps/backoffice/src/app/features/*` (import tương đối) |
+>
+> Viết lại toàn bộ ở phase cuối. `ng-packagr` đã bỏ — thư viện dùng qua path
+> alias trỏ thẳng vào source, không còn bước đóng gói.
 
 ---
 

@@ -6,8 +6,7 @@
     "start": "ng serve backoffice",
     "build": "ng build backoffice",
     "watch": "ng build backoffice --watch --configuration development",
-    "test": "ng test domain --watch=false --browsers=ChromeHeadless && ng test shell --watch=false --browsers=ChromeHeadless",
-    "build:libs": "ng build domain && ng build ui-kit && ng build shell && ng build capability-workspace && ng build capability-worklist && ng build capability-potential-customers"
+    "test": "ng test core --watch=false --browsers=ChromeHeadless && ng test shell --watch=false --browsers=ChromeHeadless"
   },
   "prettier": {
     "printWidth": 100,
