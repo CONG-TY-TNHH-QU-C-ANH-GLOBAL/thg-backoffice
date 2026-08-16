@@ -1,38 +1,64 @@
-# THG Backoffice
+# Backoffice Foundation
 
-Nền tảng vận hành nội bộ. Repo chứa **hai tiến trình độc lập**:
+Nền tảng backoffice dùng lại được cho nhiều dự án. Repo chứa **hai tiến trình
+độc lập**:
 
 ```bash
 # terminal 1 — frontend
 cd frontend && npm start        # :4200
 
 # terminal 2 — backend
-# chưa tồn tại, xem backend/README.md
+cd backend  && npm run dev      # :3000
 ```
 
 ```
-├── frontend/     Angular 20 · toàn bộ giao diện
-├── backend/      chưa có code — chỉ ghi contract phải hiện thực
+├── frontend/     Angular 20 · giao diện · FROZEN
+├── backend/      NestJS 11 + PostgreSQL 17 · FROZEN
 └── vercel.json   deploy frontend dạng static SPA
 ```
 
+Hai bên không chia sẻ build, và **backend không import source code từ
+frontend**. Luật phân quyền có mặt ở cả hai phía vì hai lý do khác nhau: phía
+client để không render ra thứ rồi phải giấu đi, phía server để thực thi. Server
+mới là nơi chốt.
+
 ---
 
-## Đang tái cấu trúc
+## Một deployment = một database
 
-Nhánh `refactor/foundation-architecture` đang biến `frontend/` từ một app riêng
-cho THG thành một **foundation tái sử dụng được** cho nhiều khách hàng.
+```
+Công ty A  →  deployment A  →  database A
+Công ty B  →  deployment B  →  database B
+```
 
-Bốn điều kiện nghiệm thu đã khoá:
+**Không phải SaaS multi-tenant.** Không có `tenant_id` ở bất kỳ đâu. Database là
+ranh giới cô lập.
 
-1. `frontend/libs/` chỉ giữ thứ có **bằng chứng** dùng chung ngoài một khách —
-   nghiệp vụ chưa có bằng chứng thì nằm trong app của khách.
-2. `ORG / UNIT / SELF` là primitive về **phạm vi truy cập**, không phải mô hình
-   vai trò cố định; policy mở rộng được mà không sửa component.
-3. Xoá hẳn `frontend/apps/backoffice/` thì `frontend/libs/` vẫn build và test xanh.
-4. Có ít nhất một app khách thứ hai chạy được với theme, vai trò và điều hướng
-   khác hẳn THG — chứng minh foundation không phụ thuộc THG.
+## Trạng thái
 
-Tài liệu kiến trúc đầy đủ: `frontend/README.md`.
+Cả hai phía đã đóng băng ở mức foundation. Chưa có module nghiệp vụ nào, và đó
+là kết quả đúng — foundation phải dùng được khi chưa cài capability nào.
 
-Trong lúc chưa xong, `main` vẫn là bản chạy được.
+| | Có gì | Chưa có |
+|---|---|---|
+| **frontend** | component, token contract, navigation, access scope, ba feature mẫu | — |
+| **backend** | identity, user, session, migration, health | phân quyền, đơn vị tổ chức, vai trò, audit, file, thông báo |
+
+`backend/src/capabilities/` rỗng có chủ đích: đó là chỗ module nghiệp vụ của
+từng dự án sẽ nằm, và nó chỉ nhận thứ đã có bằng chứng dùng chung, không nhận
+abstraction đoán trước.
+
+Chi tiết: [`backend/README.md`](backend/README.md) ·
+[`frontend/README.md`](frontend/README.md)
+
+## Ranh giới được canh bằng máy
+
+```bash
+cd backend && npm run check      # 7 ranh giới kiến trúc, 0 dependency
+```
+
+Quan trọng nhất trong đó: `core` không bao giờ được biết tên một capability, và
+`core` khai *port* còn `infrastructure` viết *adapter*. Foundation biết tên một
+module nghiệp vụ là foundation hết dùng lại được cho dự án sau.
+
+Frontend có checker riêng: `frontend/scripts/check-architecture.sh`.

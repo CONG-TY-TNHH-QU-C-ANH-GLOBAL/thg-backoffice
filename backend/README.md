@@ -1,75 +1,179 @@
-# Backend — chưa tồn tại
+# Backoffice Foundation — Backend
 
-Thư mục này cố ý còn trống. Chưa có một dòng code backend nào, và chưa chọn stack.
+Nền tảng backend dùng lại được cho nhiều dự án backoffice. **Đây không phải
+backend của một công ty cụ thể.** Không có phòng ban, vai trò, quy trình duyệt
+hay bất kỳ từ vựng nghiệp vụ nào trong `core/` — và có một checker canh điều đó.
 
-Nó tồn tại để đánh dấu ranh giới: **frontend chạy ở terminal 1, backend chạy ở
-terminal 2**, hai tiến trình độc lập, không chia sẻ build.
+Trạng thái hiện tại: **FROZEN — sẵn sàng đóng gói / tuỳ biến theo dự án.**
 
 ```bash
-# terminal 1
+# terminal 1 — frontend
 cd frontend && npm start        # :4200
 
-# terminal 2 — khi backend tồn tại
-cd backend  && npm run dev
+# terminal 2 — backend
+cd backend  && npm run dev      # :3000
 ```
+
+Hai tiến trình độc lập, không chia sẻ build. Backend **không import source code
+từ frontend**; mỗi bên tự sở hữu phần thi hành của mình.
 
 ---
 
-## 1. Điểm đấu nối duy nhất
-
-Frontend chưa gọi HTTP một lần nào. Mọi dữ liệu đi qua abstract repository được
-bind vào fixture tại **một file duy nhất**:
+## 1. Một deployment = một database
 
 ```
-frontend/projects/backoffice/src/app/app.config.ts
+Công ty A  →  deployment A  →  database A
+Công ty B  →  deployment B  →  database B
 ```
 
-Lên API thật = đổi `useClass: Fixture*` → `Http*` trong file đó. Không một
-component nào bị sửa, vì không component nào biết nó đang cầm implementation gì.
+**Không phải SaaS multi-tenant.** Không có cột `tenant_id`, không có tenant
+resolver, không có cross-tenant routing ở bất kỳ đâu trong codebase. Database
+chính là ranh giới cô lập — biên giới mạnh nhất, và là biên giới không thể quên
+áp dụng trong một câu `WHERE`.
 
-## 2. Năm contract backend phải hiện thực
+## 2. Stack
 
-| Contract | Method | Vị trí |
-|---|---|---|
-| `SessionRepository` | `current()` · `personas()` · `switchPersona(userId)` | `platform/domain/src/lib/session/` |
-| `DepartmentRepository` | `list()` · `members(departmentId)` | `platform/domain/src/lib/org/` |
-| `OverviewRepository` | `organizationMetrics(user)` · `departmentMetrics(user, id)` · `approvals(user)` · `activity(user)` · `suggestions(user, id?)` | `capabilities/workspace/src/lib/data-access/` |
-| `WorkItemRepository` | `list(user, query)` | `capabilities/worklist/src/lib/data-access/` |
-| `PotentialCustomerRepository` | `list(user, query)` · `pool(user, deptId)` · `workload(user, deptId)` · `assign(user, customerId, assigneeId)` | `capabilities/potential-customers/src/lib/data-access/` |
+NestJS 11 · PostgreSQL 17 · `pg` (không ORM) · `zod` cho env và request DTO ·
+`scrypt` từ `node:crypto` cho mật khẩu.
 
-*(Đường dẫn tính từ `frontend/projects/`. Chúng sẽ đổi trong quá trình tái cấu
-trúc — xem plan; tên contract thì không đổi.)*
+Không ORM là lựa chọn có chủ đích: schema ở đây nhỏ và ổn định, còn SQL viết tay
+thì đọc được nguyên văn thứ sẽ chạy trên database.
 
-**Mọi method đều nhận `user: UserContext` làm tham số đầu tiên.** Đây không phải
-tình cờ — chữ ký được thiết kế sẵn để server tự scope dữ liệu theo người gọi.
+## 3. Core hiện có gì
 
-## 3. Luật phân quyền server BẮT BUỘC thi hành lại
+**Chỉ Identity.** Người dùng, danh tính, phiên đăng nhập — không hơn.
 
-Frontend có bản sao các luật này, nhưng **chỉ để không render ra rồi phải giấu
-đi**. Server mới là nơi chốt. Client không bao giờ là điểm thực thi.
+```text
+backend/
+├── src/
+│   ├── config/           môi trường đã validate — cửa DUY NHẤT đọc process.env
+│   ├── infrastructure/   adapter công nghệ
+│   │   ├── auth/             scrypt password hasher
+│   │   ├── database/         pool, migration runner, CLI
+│   │   └── health/           /health
+│   ├── common/           primitive cross-cutting, KHÔNG phải sọt rác
+│   │   ├── errors/           domain error
+│   │   ├── http/             error filter, zod pipe
+│   │   └── types/            database port
+│   ├── core/             FOUNDATION
+│   │   ├── identity/         login, session, CSRF, throttle
+│   │   └── users/            user, bootstrap CLI
+│   └── capabilities/     RỖNG CÓ CHỦ ĐÍCH — xem §4
+├── migrations/
+├── scripts/              check-boundaries.sh
+├── docker-compose.yml
+└── package.json
+```
 
-| Tầng | Câu hỏi | Luật |
-|---|---|---|
-| **L1 — đơn vị** | Người này vào được đơn vị nào? | `ORG` → tất cả · `UNIT`/`SELF` → chỉ đơn vị của mình |
-| **L2 — bản ghi** | Trong một đơn vị, đọc được dòng nào? | `ORG` → mọi bản ghi · `UNIT` → mọi bản ghi của đơn vị · `SELF` → chỉ bản ghi gán cho mình |
-| **Ghi** | Ai được gán việc cho người khác? | chỉ `ORG` và `UNIT` |
+Chưa có: phân quyền, đơn vị tổ chức, vai trò, quyền hạn, audit, file, thông báo,
+cấu hình. Chúng **không** bị bỏ quên — chúng chưa được yêu cầu, và foundation
+phải dùng được khi chưa cài một capability nghiệp vụ nào.
 
-Luật viết dưới dạng hàm thuần, không phụ thuộc Angular, tại:
+## 4. `capabilities/` rỗng là kết quả đúng
+
+Đó là chỗ module nghiệp vụ của từng dự án sẽ nằm. Nó rỗng vì chưa có dự án nào
+đóng góp bằng chứng về thứ dùng chung được — và một thư mục rỗng trung thực thì
+tốt hơn một abstraction đoán trước sẽ sai.
+
+Ranh giới quan trọng nhất, do `npm run check` canh:
 
 ```
-frontend/libs/core/access/rules/        (sau tái cấu trúc)
+core  ↛  capabilities        core biết tên một capability là core đã hỏng
+core  ↛  infrastructure      core khai PORT, infrastructure viết ADAPTER
 ```
 
-**Nếu backend viết bằng TypeScript: import thẳng thư mục đó, không chép tay.**
-Chép tay là cách chắc chắn nhất để hai bên lệch nhau sau vài tháng.
+## 5. Chạy cục bộ
 
-Nếu backend dùng ngôn ngữ khác, thư mục đó là đặc tả tham chiếu — mỗi thay đổi
-luật phải sửa cả hai phía trong cùng một PR.
+```bash
+cp .env.example .env
+npm run db:up                 # PostgreSQL qua docker compose
+npm run migrate
+npm run dev
+```
 
-## 4. Chưa quyết định
+`db:up` là đường tiện nhất, không phải đường duy nhất — **bất kỳ PostgreSQL 17
+nào cũng chạy được**, chỉ cần `DATABASE_URL` trỏ đúng. Máy không có Docker thì
+cài PostgreSQL trực tiếp rồi bỏ qua `db:up`.
 
-Stack, cách xác thực, schema. Ba việc đó chỉ nên chốt khi bắt đầu viết backend
-thật, không phải bây giờ.
+Tạo người dùng đầu tiên (không có endpoint tạo user: tạo user qua HTTP đòi hỏi
+trả lời "ai được phép", mà đó là phân quyền — chưa tới):
 
-Một điều đã chốt: **Backoffice không đăng nhập ai cả** — gateway/SSO làm việc đó,
-`SessionRepository.current()` là ranh giới. Xem `session.repository.ts:4-7`.
+```bash
+BOOTSTRAP_PASSWORD='...' npm run user:create -- --email a@b.c --name "A B"
+```
+
+Mật khẩu đọc từ biến môi trường hoặc prompt, **không bao giờ từ tham số dòng
+lệnh** — argv nhìn thấy được trong `ps` và rơi vào history của shell.
+
+## 6. Lệnh
+
+| | |
+|---|---|
+| `npm run dev` | chạy watch mode |
+| `npm run migrate` | áp migration, forward-only, chạy lại thì skip |
+| `npm run typecheck` | |
+| `npm run build` | |
+| `npm test` | 95 test; **103** nếu có PostgreSQL (xem dưới) |
+| `npm run check` | 7 ranh giới kiến trúc, 0 dependency |
+
+Test integration của migration runner **tự tắt** khi không có biến dưới đây, nên
+nó sẽ skip trong im lặng nếu CI quên khai báo. Database đó bị **xoá schema** giữa
+các case — đừng trỏ vào database có dữ liệu:
+
+```bash
+DATABASE_URL_TEST=postgres://user:pass@localhost:5432/backoffice_itest npm test
+```
+
+## 7. Giới hạn vận hành đã biết
+
+Không phải lỗi — là thứ deployment phải biết trước khi đưa lên production.
+
+**Rate limiter đăng nhập nằm trong bộ nhớ, tính theo TIẾN TRÌNH.** Chạy nhiều
+replica thì mỗi replica có ngân sách riêng, nên giới hạn thực tế nhân lên theo số
+replica. Cần giới hạn thật sự toàn cục thì đặt ở edge/reverse proxy, hoặc thay
+bằng một shared store.
+
+**HSTS và CSP thuộc về deployment, không phải ứng dụng.** HSTS là thuộc tính của
+lớp kết thúc TLS — đặt từ một app có thể chạy HTTP ở dev thì hoặc vô tác dụng,
+hoặc khoá lập trình viên khỏi localhost hàng tháng. CSP mô tả nguồn script/style
+của *frontend*, thứ API này không phục vụ và không thể biết. Ứng dụng tự đặt
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` và tắt
+`x-powered-by`.
+
+**Session hết hạn không được dọn tự động.** Hàng `sessions` chỉ lớn dần. Chúng
+không còn hiệu lực (`resolve` từ chối cả expired lẫn revoked), nên đây là chuyện
+dung lượng chứ không phải bảo mật.
+
+Không thêm scheduler vào ứng dụng cho việc này: một job runner kèm chuyện chọn
+leader khi chạy nhiều replica là quá nhiều bộ máy cho một câu lệnh mà cron của
+deployment vốn đã biết chạy.
+
+```sql
+DELETE FROM sessions
+ WHERE expires_at < now() - interval '30 days'
+    OR (revoked_at IS NOT NULL AND revoked_at < now() - interval '30 days');
+```
+
+Cửa sổ 30 ngày giữ lại lịch sử gần đây để còn trả lời được "phiên này kết thúc
+lúc nào, bằng cách nào". `idx_sessions_expires_at` có sẵn để câu lệnh trên rẻ.
+
+**Database sập ⇒ `/health` trả 503 và tự hồi phục khi database trở lại**, cùng
+một tiến trình, không crash-loop. Nhưng `POST /auth/login` lúc đó trả 500 chứ
+không phải 503. Nó đóng lại đúng cách và không lộ chi tiết nội bộ; chỉ là mã
+trạng thái chưa mô tả đúng nguyên nhân.
+
+## 8. Bảo mật — hình dạng hiện tại
+
+Phiên đăng nhập là **token mờ phía server**, không phải JWT: database chỉ lưu
+SHA-256 của token, còn token thô chỉ tồn tại trong một cookie `HttpOnly` —
+`Secure` ở production, `SameSite=Strict`. Không client nào **có thể** cất nó vào
+`localStorage`, vì không client nào được cầm nó.
+
+CSRF có hai lớp: `SameSite=Strict` là lớp chính, và một guard đòi header
+`x-requested-with` trên mọi request thay đổi trạng thái là lớp hai — vì
+`SameSite` do trình duyệt thi hành, còn lớp hai thì không.
+
+CORS **tắt mặc định** (same-origin, đúng hình dạng production). Deployment nào
+cần thì khai `CORS_ORIGINS`; schema **từ chối `*` ngay lúc boot**, vì wildcard
+không dùng được với cookie credentials. Domain của khách nằm trong environment
+của deployment đó, không nằm trong Foundation.
