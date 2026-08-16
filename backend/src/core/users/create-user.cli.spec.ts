@@ -104,6 +104,18 @@ describe('readHiddenLine', () => {
       // corruption as leaking `[A` in.
       await expect(type(`a${ESC}b\r`)).resolves.toBe('ab');
     });
+
+    it('still recognises a sequence after a DOUBLE Escape', async () => {
+      // The trap when the parser is extracted: on seeing a non-introducer after
+      // ESC, it must fall through to the ESC check rather than returning. The
+      // second ESC here re-enters escaped mode, so the arrow is swallowed. Get
+      // this wrong and the result is "a[Ab" — the original bug, restored.
+      await expect(type(`a${ESC}${ESC}[Ab\r`)).resolves.toBe('ab');
+    });
+
+    it('keeps an ordinary character after a double Escape', async () => {
+      await expect(type(`a${ESC}${ESC}cb\r`)).resolves.toBe('acb');
+    });
   });
 
   describe('the behaviour that must not change', () => {

@@ -50,6 +50,51 @@ const KEY = {
  */
 const CSI_FINAL = { min: 0x40, max: 0x7e } as const;
 
+/** Where a reader is inside an ANSI escape sequence. */
+type EscapeMode = 'normal' | 'escaped' | 'csi' | 'ss3';
+
+/**
+ * The escape-sequence state machine, and nothing else.
+ *
+ * Pure on purpose: given the current mode and one character, it answers two
+ * questions — what the mode becomes, and whether this character belonged to a
+ * sequence and must therefore be discarded. It never touches the collected
+ * value, the terminal, or the promise, so the caller can stay a plain loop over
+ * keys rather than a loop that is also a parser.
+ *
+ * `consumed: false` means "this is an ordinary character, deal with it".
+ */
+function stepEscape(
+  mode: EscapeMode,
+  char: string,
+  key: number,
+): { mode: EscapeMode; consumed: boolean } {
+  if (mode === 'csi') {
+    // Parameters and intermediates carry no terminator; only a final byte ends
+    // the sequence. Everything up to it is swallowed.
+    if (key >= CSI_FINAL.min && key <= CSI_FINAL.max) return { mode: 'normal', consumed: true };
+    return { mode: 'csi', consumed: true };
+  }
+
+  // SS3 (`ESC O …`, the function keys) is exactly one byte long.
+  if (mode === 'ss3') return { mode: 'normal', consumed: true };
+
+  if (mode === 'escaped') {
+    if (char === '[') return { mode: 'csi', consumed: true };
+    if (char === 'O') return { mode: 'ss3', consumed: true };
+
+    // DELIBERATELY NO RETURN HERE. The character is not an introducer, so the
+    // ESC before it was a bare Escape keypress — but this character may itself
+    // be another ESC, and returning now would drop it. `ESC ESC [ A` has to
+    // stay a consumed arrow key; returning early turns it back into "[A" in
+    // the password, which is the exact bug this parser exists to prevent.
+  }
+
+  if (key === KEY.escape) return { mode: 'escaped', consumed: true };
+
+  return { mode: 'normal', consumed: false };
+}
+
 function parseArgs(argv: string[]): Args {
   const args: Args = {};
   for (let i = 0; i < argv.length; i += 1) {
@@ -78,13 +123,11 @@ export function readHiddenLine(): Promise<string> {
     let value = '';
 
     /**
-     * Where we are inside an ANSI escape sequence.
-     *
      * Held across data events, not per chunk: a terminal is free to split
      * `ESC [ A` over two reads, and a parser that reset at the chunk boundary
      * would leak the tail of a split sequence into the password.
      */
-    let mode: 'normal' | 'escaped' | 'csi' | 'ss3' = 'normal';
+    let mode: EscapeMode = 'normal';
 
     const restore = (): void => {
       stdin.setRawMode(false);
@@ -102,41 +145,12 @@ export function readHiddenLine(): Promise<string> {
         // characters.
         const key = char.codePointAt(0)!;
 
-        // Mid-sequence: swallow parameter and intermediate bytes until the
-        // final one. Dropping only the ESC would leave the rest — pressing Up
-        // arrow would silently put "[A" in the password.
-        if (mode === 'csi') {
-          if (key >= CSI_FINAL.min && key <= CSI_FINAL.max) mode = 'normal';
-          continue;
-        }
-
-        // SS3 (`ESC O …`, the function keys) is exactly one byte long.
-        if (mode === 'ss3') {
-          mode = 'normal';
-          continue;
-        }
-
-        if (mode === 'escaped') {
-          if (char === '[') {
-            mode = 'csi';
-            continue;
-          }
-          if (char === 'O') {
-            mode = 'ss3';
-            continue;
-          }
-
-          // Neither introducer, so the ESC was a bare Escape keypress and this
-          // character is an ordinary one. Fall through and handle it normally
-          // rather than eating it — silently losing a typed character is the
-          // same class of bug as leaking "[A" in.
-          mode = 'normal';
-        }
-
-        if (key === KEY.escape) {
-          mode = 'escaped';
-          continue;
-        }
+        // Escape-sequence handling lives in stepEscape, so what remains below
+        // is only line editing. A character that belonged to a sequence — an
+        // arrow key, a function key — is discarded here and never reaches it.
+        const step = stepEscape(mode, char, key);
+        mode = step.mode;
+        if (step.consumed) continue;
 
         if (key === KEY.lineFeed || key === KEY.carriageReturn || key === KEY.endOfTransmission) {
           restore();
