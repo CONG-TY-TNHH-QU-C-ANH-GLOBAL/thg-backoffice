@@ -31,6 +31,11 @@ export class AppConfig {
     return this.config.get('LOG_LEVEL', { infer: true });
   }
 
+  /** Empty means CORS stays off — same-origin only. */
+  get corsOrigins(): readonly string[] {
+    return this.config.get('CORS_ORIGINS', { infer: true });
+  }
+
   get isProduction(): boolean {
     return this.nodeEnv === 'production';
   }

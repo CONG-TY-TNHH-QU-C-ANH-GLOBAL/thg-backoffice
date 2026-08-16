@@ -31,6 +31,29 @@ describe('validateEnv', () => {
     expect(() => validateEnv({ ...valid, PORT: '70000' })).toThrow();
   });
 
+  describe('CORS_ORIGINS', () => {
+    it('defaults to empty, which means CORS stays off — the secure default', () => {
+      expect(validateEnv(valid).CORS_ORIGINS).toEqual([]);
+    });
+
+    it('parses a comma-separated allowlist and trims it', () => {
+      const env = validateEnv({
+        ...valid,
+        CORS_ORIGINS: 'http://localhost:4200, https://app.example.com ',
+      });
+
+      expect(env.CORS_ORIGINS).toEqual(['http://localhost:4200', 'https://app.example.com']);
+    });
+
+    it('REFUSES a wildcard', () => {
+      // A wildcard cannot be combined with cookie credentials: the browser
+      // would reject the response, and if it did not, any site could read
+      // authenticated data. Better to fail at boot than to ship it.
+      expect(() => validateEnv({ ...valid, CORS_ORIGINS: '*' })).toThrow(/explicit origins/);
+      expect(() => validateEnv({ ...valid, CORS_ORIGINS: 'http://a.test,*' })).toThrow();
+    });
+  });
+
   it('reports every problem at once, not one per restart', () => {
     expect(() => validateEnv({ NODE_ENV: 'staging', PORT: 'abc' })).toThrow(
       /NODE_ENV[\s\S]*PORT[\s\S]*DATABASE_URL|DATABASE_URL[\s\S]*/,

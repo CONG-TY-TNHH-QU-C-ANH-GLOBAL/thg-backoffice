@@ -24,6 +24,36 @@ export const envSchema = z.object({
     }),
 
   LOG_LEVEL: z.enum(['error', 'warn', 'log', 'debug', 'verbose']).default('log'),
+
+  /**
+   * Comma-separated origins allowed to call this API from a browser.
+   *
+   * EMPTY BY DEFAULT, which disables CORS entirely — the secure default, and
+   * the right one for the production model this foundation targets: the client
+   * is served from the same origin as the API, behind one reverse proxy.
+   *
+   * Development is the exception: the Angular dev server runs on :4200 while
+   * the API runs on :3000, so a local `.env` allowlists it explicitly.
+   *
+   * Never `*`. A wildcard cannot be combined with credentials, and this API
+   * authenticates with a cookie — a browser would refuse the response, and if
+   * it did not, any site could read authenticated data.
+   *
+   * A customer's production domain belongs in that deployment's environment,
+   * never in this file.
+   */
+  CORS_ORIGINS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter((origin) => origin.length > 0),
+    )
+    .refine((origins) => !origins.includes('*'), {
+      message: 'CORS_ORIGINS must list explicit origins; "*" is refused with credentials.',
+    }),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 import { AppConfig } from './config/app.config';
 import { DomainErrorFilter } from './common/http/domain-error.filter';
@@ -25,13 +26,51 @@ async function bootstrap(): Promise<void> {
   app.getHttpAdapter().getInstance().disable('x-powered-by');
 
   /**
-   * CORS stays OFF.
-   *
-   * This API is same-origin with its client by design. Leaving CORS closed is
-   * what makes the CSRF reasoning hold: a cross-origin script cannot add the
-   * required header without a preflight, and there is no preflight to answer.
-   * Opening it to another origin means revisiting CsrfGuard and SameSite.
+   * Headers the APPLICATION owns, because they are true of this API wherever
+   * it is deployed. HSTS and CSP are deliberately NOT here — see below.
    */
+  app.use((_req: Request, res: Response, next: NextFunction) => {
+    // Never let a browser guess a response is HTML and execute it.
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    // A JSON API has no reason to be framed.
+    res.setHeader('X-Frame-Options', 'DENY');
+    // Do not leak the path (which can contain ids) to third parties.
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    next();
+  });
+
+  /**
+   * HSTS and CSP belong to the DEPLOYMENT, not here.
+   *
+   * HSTS is a property of the TLS terminator: setting it from an app that may
+   * be reached over plain HTTP in development either does nothing or locks a
+   * developer out of localhost for months.
+   *
+   * CSP describes where the *frontend's* scripts, styles and fonts come from.
+   * This API serves none of them and cannot know. The reverse proxy that serves
+   * the client owns that header.
+   */
+
+  /**
+   * CORS is OFF unless a deployment names origins.
+   *
+   * Off is the production shape: client and API behind one origin. Development
+   * allowlists http://localhost:4200 in its own .env.
+   *
+   * When it IS on, the CSRF layering still holds: an attacker's origin is not
+   * in the allowlist, so its preflight fails and it cannot set the header the
+   * CsrfGuard requires. And SameSite=strict is unaffected by port, so a cookie
+   * still travels between :4200 and :3000 — both are the same *site*.
+   */
+  const origins = config.corsOrigins;
+  if (origins.length > 0) {
+    app.enableCors({
+      origin: [...origins],
+      credentials: true,
+      allowedHeaders: ['Content-Type', 'X-Requested-With'],
+      methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    });
+  }
 
   /**
    * Behind a reverse proxy, trust exactly one hop so `req.ip` is the client
