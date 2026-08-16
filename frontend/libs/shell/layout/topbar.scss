@@ -45,12 +45,12 @@
   border: 1px solid transparent;
   border-radius: var(--r-md);
   /* A quiet well in the white chrome, not a raised control. */
-  background: #f3f4f7;
+  background: var(--well-bg);
   color: var(--fg-subtle);
   transition: background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
 
   &:hover {
-    background: #eceef2;
+    background: var(--well-bg-hover);
   }
 
   &:focus-within {

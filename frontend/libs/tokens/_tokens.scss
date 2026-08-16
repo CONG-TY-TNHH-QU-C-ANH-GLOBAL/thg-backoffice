@@ -1,16 +1,31 @@
 /*
- * Design tokens — the only place raw values live.
- * A tenant re-themes by overriding these custom properties (see Branding.theme);
- * no component is ever edited to change a brand.
+ * THE VISUAL CONTRACT.
+ *
+ * Every name below is something a component is allowed to read, and every value
+ * below is a DEFAULT — not a decision. A customer application overrides what it
+ * cares about in its own theme/ folder; nothing in libs/ is edited to change a
+ * brand, and no component ever holds a literal colour.
+ *
+ * Two kinds of entry live here, and the difference matters:
+ *
+ *   identity   primary ramp, type family. Deliberately neutral here so that a
+ *              customer who forgets to ship a theme SEES that it is missing
+ *              instead of silently inheriting somebody else's brand.
+ *   system     spacing, radius, elevation, type scale, control metrics, motion.
+ *              Real defaults an admin product can ship on. Overridable, but a
+ *              customer usually should not need to.
  */
 :root {
-  /* --- brand ------------------------------------------------------------ */
-  --c-primary-50: #eef3ff;
-  --c-primary-100: #dbe6ff;
-  --c-primary-200: #bdd0ff;
-  --c-primary: #2b62e8;
-  --c-primary-600: #1e4fd1;
-  --c-primary-700: #1840ad;
+  /* --- identity: primary ------------------------------------------------
+   * Neutral slate on purpose. See the header — this is the "no theme loaded"
+   * state, not a design choice, and it is meant to look like one.
+   */
+  --c-primary-50: #f1f2f4;
+  --c-primary-100: #e3e5e9;
+  --c-primary-200: #c9cdd4;
+  --c-primary: #4a5568;
+  --c-primary-600: #3c4655;
+  --c-primary-700: #2f3742;
   --c-primary-soft: var(--c-primary-50);
 
   /* --- accents -----------------------------------------------------------
@@ -84,8 +99,12 @@
   --sh-md: 0 4px 8px -2px rgba(11, 18, 32, 0.06), 0 12px 24px -8px rgba(11, 18, 32, 0.1);
   --sh-lg: 0 8px 16px -6px rgba(11, 18, 32, 0.08), 0 28px 56px -16px rgba(11, 18, 32, 0.18);
 
-  --ring: 0 0 0 3px rgba(43, 98, 232, 0.2);
-  --ring-danger: 0 0 0 3px rgba(229, 55, 92, 0.2);
+  /* Derived from the live brand rather than a literal. The old value was
+   * rgba(43,98,232,.2) — the primary of the day, frozen. A customer who changed
+   * --c-primary still got the previous brand's focus ring, which is the exact
+   * failure this contract exists to prevent. */
+  --ring: 0 0 0 3px color-mix(in srgb, var(--c-primary) 20%, transparent);
+  --ring-danger: 0 0 0 3px color-mix(in srgb, var(--c-rose) 20%, transparent);
 
   /* --- spacing ----------------------------------------------------------- */
   --s-1: 4px;
@@ -97,18 +116,62 @@
   --s-8: 32px;
   --s-10: 40px;
 
+  /* --- navigation surface ------------------------------------------------
+   * Navigation is the largest painted area in an operations product, so it
+   * gets its own entries in the contract rather than borrowing the page ramp.
+   * These are NOT duplicates of --fg / --line: the values differ on purpose.
+   *
+   * Neutral greys, not blue-greys. At the same lightness a neutral ramp reads
+   * considerably more expensive — the blue cast is what dates an interface to
+   * the admin-template era, and it is the one thing a large white navigation
+   * cannot hide.
+   *
+   * They lived inside sidebar.scss until now, which is precisely what made the
+   * navigation the one part of the product a customer could not re-theme.
+   */
+  --nav-w: 264px;
+  /* 72, not 80: with the icon containers gone the extra width was two empty
+   * margins. Narrower reads as a spine rather than as a column. */
+  --nav-rail-w: 72px;
+
+  --nav-surface: var(--bg-chrome);
+  --nav-fg: #101828;
+  --nav-fg-muted: #58616f;
+  --nav-icon: #656e7d;
+  /* 4.6:1 on white. The old #9aa1ad measured 2.6:1 — under the floor for text
+   * this small, and captions are read, not decoration. */
+  --nav-section-fg: #6f7786;
+  /* The single interactive fill in the navigation. It marks where the pointer
+   * is; nothing else in there is painted at all. */
+  --nav-hover: #f3f4f7;
+  --nav-line: #eaecf0;
+  --nav-spine: #e4e7ec;
+  /* Collapsed-rail slot label — dimmer than --nav-icon because it sits under
+   * the icon rather than beside it. */
+  --nav-slot-fg: #6a7890;
+
+  /* --- search well --------------------------------------------------------
+   * A quiet recess in the white chrome, not a raised control. Its own pair
+   * because it must stay legible against chrome, not against the page ground.
+   */
+  --well-bg: #f3f4f7;
+  --well-bg-hover: #eceef2;
+
   /* --- layout ------------------------------------------------------------ */
-  --sidebar-w: 212px;
-  --sidebar-rail-w: 64px;
   --topbar-h: 58px;
   --page-max: 1420px;
   /* Comfortable pointer target; mobile raises it. */
   --control-h: 34px;
   --control-h-sm: 28px;
 
-  /* --- type -------------------------------------------------------------- */
-  --f-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --f-num: 'Inter', ui-monospace, monospace;
+  /* --- identity: type ----------------------------------------------------
+   * The platform stack, so the foundation renders correctly with no webfont
+   * loaded at all. A customer names its own face in theme/_type.scss and loads
+   * it from its own index.html — the foundation never fetches a font.
+   */
+  --f-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+
+  /* --- system: type scale ------------------------------------------------- */
   --t-xs: 11px;
   --t-sm: 12px;
   --t-base: 13px;

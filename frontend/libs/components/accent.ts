@@ -1,6 +1,3 @@
-/** Accent names that have `--c-<name>` / `--c-<name>-soft` tokens defined. */
-export type AccentName = 'blue' | 'teal' | 'rose' | 'amber' | 'violet' | 'green' | 'slate';
-
 /**
  * Maps an accent name to the two custom properties every tinted surface reads,
  * so no component ever branches on a colour name.

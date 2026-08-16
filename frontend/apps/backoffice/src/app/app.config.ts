@@ -9,6 +9,7 @@ import {
   provideWorkspaceWidgets,
   provideWorkspaces,
 } from '@bo/core';
+import { provideFormatting } from '@bo/components';
 import { provideShellNavigation } from '@bo/shell';
 import {
   FixtureOverviewRepository,
@@ -58,6 +59,9 @@ export const appConfig: ApplicationConfig = {
     // --- tenant identity -------------------------------------------------
     provideBranding(THG_BRANDING),
     provideShellNavigation(THG_NAVIGATION),
+    // Locale and currency are this customer's, not the foundation's. Without
+    // this line the platform formats in en-US/USD and still works.
+    provideFormatting({ locale: 'vi-VN', currency: 'VND', justNow: 'vừa xong' }),
 
     // --- what this tenant runs -------------------------------------------
     provideCapabilities(workspaceCapabilities, worklistCapabilities, potentialCustomerCapabilities),

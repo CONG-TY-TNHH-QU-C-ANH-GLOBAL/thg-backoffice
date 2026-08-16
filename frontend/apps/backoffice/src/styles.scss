@@ -1,8 +1,13 @@
-/* The visual contract: tokens, reset, base element styles. */
+/* 1. The foundation's visual contract: token defaults, reset, base elements. */
 @use 'index' as *;
 
-/* Controls whose classes native elements wear (.btn, .input, .select).
- * Everything else is component-scoped and needs no global sheet. */
+/* 2. THG's visual language. Must come after the contract — every declaration
+ *    in here is an override of a documented default. This is the ONLY place
+ *    this customer's look is decided. */
+@use './app/theme' as *;
+
+/* 3. Controls whose classes native elements wear (.btn, .input, .select).
+ *    Everything else is component-scoped and needs no global sheet. */
 @use 'controls' as *;
 
 /*

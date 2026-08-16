@@ -1,25 +1,72 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { InjectionToken, Pipe, PipeTransform, Provider, inject } from '@angular/core';
 
 /**
- * ponytail: two tiny display pipes instead of pulling a date library.
- * Locale is fixed at the tenant level today; make it an input when the
- * platform ships to a second locale.
+ * Display formatting.
+ *
+ * ponytail: three tiny pipes over `Intl` instead of a date library.
+ *
+ * The locale and currency are CONFIGURATION, not constants. They used to be
+ * `vi-VN` and `VND` written into this file, which meant the foundation could
+ * only ever ship to one country — a customer outside Vietnam had to fork a
+ * library to show their own money.
+ *
+ * This is not an i18n system and is not trying to be one. It is the smallest
+ * thing that stops the foundation being locked to one customer's locale.
  */
+export interface FormatConfig {
+  /** BCP 47 tag, e.g. 'vi-VN', 'en-US'. */
+  locale: string;
+  /** ISO 4217 code, e.g. 'VND', 'USD'. */
+  currency: string;
+  /** Shown by `boRelativeTime` for anything under a minute old. */
+  justNow: string;
+  /** Shown by every pipe for null, undefined and unparseable input. */
+  blank: string;
+}
 
-const DATE_TIME = new Intl.DateTimeFormat('vi-VN', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
+/**
+ * Neutral default so `libs/` renders and tests on its own, with no application
+ * present. A customer application overrides it with `provideFormatting`.
+ */
+export const FORMAT_CONFIG = new InjectionToken<FormatConfig>('FORMAT_CONFIG', {
+  providedIn: 'root',
+  factory: (): FormatConfig => ({
+    locale: 'en-US',
+    currency: 'USD',
+    justNow: 'just now',
+    blank: '—',
+  }),
 });
+
+/** Composition-root helper: `provideFormatting({ locale: 'vi-VN', … })`. */
+export function provideFormatting(config: Partial<FormatConfig>): Provider {
+  return {
+    provide: FORMAT_CONFIG,
+    useFactory: (): FormatConfig => ({
+      locale: 'en-US',
+      currency: 'USD',
+      justNow: 'just now',
+      blank: '—',
+      ...config,
+    }),
+  };
+}
 
 @Pipe({ name: 'boDateTime' })
 export class DateTimePipe implements PipeTransform {
+  private readonly config = inject(FORMAT_CONFIG);
+  private readonly format = new Intl.DateTimeFormat(this.config.locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
   transform(value: string | Date | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return this.config.blank;
     const date = new Date(value);
-    return isNaN(date.getTime()) ? '—' : DATE_TIME.format(date).replace(',', '');
+    return isNaN(date.getTime()) ? this.config.blank : this.format.format(date).replace(',', '');
   }
 }
 
@@ -31,30 +78,32 @@ const UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
   ['minute', 60_000],
 ];
 
-const RELATIVE = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
-
 @Pipe({ name: 'boRelativeTime' })
 export class RelativeTimePipe implements PipeTransform {
+  private readonly config = inject(FORMAT_CONFIG);
+  private readonly format = new Intl.RelativeTimeFormat(this.config.locale, { numeric: 'auto' });
+
   transform(value: string | Date | null | undefined): string {
-    if (!value) return '—';
+    if (!value) return this.config.blank;
     const diff = new Date(value).getTime() - Date.now();
-    if (isNaN(diff)) return '—';
+    if (isNaN(diff)) return this.config.blank;
     for (const [unit, ms] of UNITS) {
-      if (Math.abs(diff) >= ms) return RELATIVE.format(Math.round(diff / ms), unit);
+      if (Math.abs(diff) >= ms) return this.format.format(Math.round(diff / ms), unit);
     }
-    return 'vừa xong';
+    return this.config.justNow;
   }
 }
 
-const CURRENCY = new Intl.NumberFormat('vi-VN', {
-  style: 'currency',
-  currency: 'VND',
-  maximumFractionDigits: 0,
-});
-
 @Pipe({ name: 'boMoney' })
 export class MoneyPipe implements PipeTransform {
+  private readonly config = inject(FORMAT_CONFIG);
+  private readonly format = new Intl.NumberFormat(this.config.locale, {
+    style: 'currency',
+    currency: this.config.currency,
+    maximumFractionDigits: 0,
+  });
+
   transform(value: number | null | undefined): string {
-    return value == null ? '—' : CURRENCY.format(value);
+    return value == null ? this.config.blank : this.format.format(value);
   }
 }

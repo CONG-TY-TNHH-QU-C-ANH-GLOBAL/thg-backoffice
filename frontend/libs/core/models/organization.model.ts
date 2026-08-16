@@ -8,7 +8,19 @@ import { Role } from '../access/rules/scope';
 /** Key of a capability registered in the capability registry. */
 export type CapabilityKey = string;
 
-export type Accent = 'blue' | 'teal' | 'rose' | 'amber' | 'violet' | 'green' | 'slate';
+/**
+ * A key into the theme's accent scale — NOT a colour.
+ *
+ * Deliberately an open string. It used to be a closed union of seven hues,
+ * which meant a customer who wanted `copper` had to edit a type in the domain
+ * model to make a visual decision. What the key resolves to is decided by
+ * `--c-<key>` / `--c-<key>-soft` in the theme, and by nothing here.
+ *
+ * The cost is that a typo is not caught at compile time. That is the right
+ * trade: an unknown key falls back to the neutral accent rather than failing,
+ * and the alternative locked visual vocabulary into business types.
+ */
+export type AccentKey = string;
 
 /** Who is acting, and where they sit in the organization. */
 export interface UserContext {
@@ -27,7 +39,7 @@ export interface Department {
   name: string;
   description: string;
   icon: string;
-  accent: Accent;
+  accent: AccentKey;
   active: boolean;
   headId: string | null;
   memberCount: number;

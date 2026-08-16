@@ -1,5 +1,5 @@
 import { InjectionToken, Provider, Type } from '@angular/core';
-import { Accent, CapabilityKey } from '../models/organization.model';
+import { AccentKey, CapabilityKey } from '../models/organization.model';
 import { Role } from '../access/rules/scope';
 
 /**
@@ -37,7 +37,7 @@ export interface CapabilityDescriptor {
   /** Neutral name, used where no persona context exists (settings, dept cards). */
   title: string;
   icon: string;
-  accent: Accent;
+  accent: AccentKey;
   /**
    * Missing role ⇒ that persona does not see this capability at all — not in
    * navigation, not in tabs, and the route guard refuses it.

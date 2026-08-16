@@ -68,6 +68,21 @@ report "R5  components ↛ màu hex thô" \
 report "R5b shell ↛ màu hex thô" \
   "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts libs/shell 2>/dev/null)"
 
+# --- R5c ── trong libs/, màu THÔ chỉ được sống ở tokens/ --------------------
+# Đây là bất biến gọn nhất diễn đạt được ranh giới component ⟂ visual language:
+# một giá trị màu nằm ngoài tokens/ là một quyết định thị giác mà khách hàng
+# không với tới được.
+report "R5c hex trong libs/ chỉ ở tokens/" \
+  "$(grep -rn "#[0-9a-fA-F]\{3,8\}\b" --include=*.scss --include=*.ts libs 2>/dev/null \
+     | grep -v "^libs/tokens/" | grep -v "icon.paths")"
+
+# --- R8 ── foundation không đặt tên một webfont cụ thể ----------------------
+# Chọn chữ là bản sắc của khách. Foundation dừng ở stack hệ điều hành, và
+# không bao giờ tự tải font.
+report "R8  libs ↛ webfont cụ thể" \
+  "$(grep -rniE "'(Inter|Roboto Flex|Manrope|Poppins|Montserrat)'" \
+       --include=*.scss --include=*.ts libs 2>/dev/null)"
+
 # --- R6 ── libs không bao giờ ngó sang apps ---------------------------------
 report "R6  libs ↛ apps" \
   "$(grep -rn "apps/" --include=*.ts --include=*.scss libs 2>/dev/null)"

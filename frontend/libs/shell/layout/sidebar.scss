@@ -16,33 +16,11 @@
 // the user is pointing at it or standing on it. Fourteen resting containers is
 // what made this read as a collection of little cards instead of one
 // instrument, and no amount of spacing or stroke tuning could cover for it.
+// The navigation's own palette and metrics are declared in the token contract
+// (libs/tokens/_tokens.scss, "navigation surface"), not here. They stayed local
+// for a long time and that is exactly what made the navigation the one part of
+// the product a customer could not re-theme.
 :host {
-  --nav-w: 264px;
-  //  72, not 80: with the icon containers gone the extra width was two empty
-  // margins. Narrower reads as a spine rather than as a column.
-  --nav-rail-w: 72px;
-
-  --nav-surface: var(--bg-chrome);
-
-  //
-  // Neutral greys, not blue-greys. At the same lightness a neutral ramp reads
-  // considerably more expensive — the blue cast is what dates an interface to
-  // the admin-template era, and it is the one thing a large white navigation
-  // cannot hide.
-  --nav-fg: #101828;
-  --nav-fg-muted: #58616f;
-  --nav-icon: #656e7d;
-  // 4.6:1 on white. The old #9aa1ad measured 2.6:1 — under the floor for text
-  // this small, and captions are read, not decoration.
-  --nav-section-fg: #6f7786;
-
-  //  The single interactive fill in the navigation. It marks where the pointer
-  // is; nothing else in here is painted at all.
-  --nav-hover: #f3f4f7;
-
-  --nav-line: #eaecf0;
-  --nav-spine: #e4e7ec;
-
   // Where you are, in the colour of the thing you are in. Raw accents are
   // graphics, not text — amber measures 2.7:1 on white and teal 3.3:1, so a
   // department label set in one would be unreadable. Mixed 70% into the
@@ -674,7 +652,7 @@
     height: 36px;
 
     .nav__slot {
-      color: #6a7890;
+      color: var(--nav-slot-fg);
     }
   }
 

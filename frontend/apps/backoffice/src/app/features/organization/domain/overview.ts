@@ -1,4 +1,4 @@
-import { Accent } from '@bo/core';
+import { AccentKey } from '@bo/core';
 
 /** Aggregates the workspace capability renders. Tenant-neutral shapes. */
 
@@ -10,7 +10,7 @@ export interface Metric {
   value: string;
   hint?: string;
   icon: string;
-  accent: Accent;
+  accent: AccentKey;
   delta?: number;
   /** True when a falling number is the good news (overdue work, churn). */
   invertDelta?: boolean;
@@ -32,7 +32,7 @@ export interface ApprovalItem {
   priority: ApprovalPriority;
   createdAt: string;
   icon: string;
-  accent: Accent;
+  accent: AccentKey;
 }
 
 export interface ActivityItem {
@@ -49,5 +49,5 @@ export interface Suggestion {
   title: string;
   body: string;
   icon: string;
-  accent: Accent;
+  accent: AccentKey;
 }

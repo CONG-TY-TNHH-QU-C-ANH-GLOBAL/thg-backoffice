@@ -1,5 +1,5 @@
 import { InjectionToken } from '@angular/core';
-import { Accent } from '../models/organization.model';
+import { AccentKey } from '../models/organization.model';
 
 /**
  * Everything tenant-specific about the chrome. The platform reads this; it
@@ -10,10 +10,17 @@ export interface Branding {
   productName: string;
   /** Short mark shown in the sidebar logo tile. */
   monogram: string;
-  accent: Accent;
+  accent: AccentKey;
   version: string;
   copyright: string;
-  /** CSS custom properties applied to :root, e.g. { '--c-primary': '#2563eb' }. */
+  /**
+   * CSS custom properties applied to :root at bootstrap.
+   *
+   * For choosing a palette at RUNTIME only — one deployment serving several
+   * brands, or a theme that arrives from an API. A customer whose look is fixed
+   * at build time should use its own `theme/` stylesheet instead: same result,
+   * no runtime cost, and one owner for the values.
+   */
   theme?: Record<string, string>;
 }
 

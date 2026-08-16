@@ -10,9 +10,8 @@ export const THG_BRANDING: Branding = {
   accent: 'blue',
   version: 'v2.6.1',
   copyright: '© 2024 THG Fulfill. All rights reserved.',
-  theme: {
-    // Overrides on top of the ui-kit defaults; omit to inherit them.
-    '--c-primary': '#2563eb',
-    '--c-primary-600': '#1d4ed8',
-  },
+  // `theme` is deliberately empty. THG's colours now live in
+  // app/theme/_palette.scss, resolved at build time with no runtime cost and
+  // one owner. This field stays available for the case it was built for:
+  // choosing a palette at RUNTIME, e.g. one deployment serving several brands.
 };
