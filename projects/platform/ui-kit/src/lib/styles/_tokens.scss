@@ -33,12 +33,23 @@
   --c-green-soft: #e4f5ec;
   --c-slate-soft: #eef2f7;
 
-  /* --- surfaces ---------------------------------------------------------- */
-  --bg-app: #f4f6fa;
+  /* --- surfaces ----------------------------------------------------------
+   * White chrome, tinted canvas. Navigation and cards are the white planes;
+   * the page ground beneath them carries the tint. A recessed grey chrome was
+   * tried and rejected — a large flat mid-grey reads as unfinished rather than
+   * as structure, however correct its luminance. Chrome earns its identity from
+   * a crisp edge and disciplined content, not from being darker.
+   *
+   * The greys here are neutral, not blue: a blue-cast grey is the signature of
+   * a decade of admin templates, and neutral reads more expensive at the same
+   * value.
+   */
+  --bg-app: #f5f6f8;
   --bg-surface: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-hover: #f1f5f9;
-  --bg-active: #e8eef7;
+  --bg-chrome: #ffffff;
+  --bg-subtle: #fafbfc;
+  --bg-hover: #f3f4f7;
+  --bg-active: #e9ebf0;
   --bg-scrim: rgba(11, 18, 32, 0.44);
 
   /* --- text -------------------------------------------------------------- */
@@ -48,14 +59,21 @@
   --fg-invert: #ffffff;
 
   /* --- lines ------------------------------------------------------------- */
-  --line: #e7ecf3;
-  --line-strong: #d3dbe7;
+  --line: #e8eaef;
+  --line-strong: #d6dae2;
+  /* The seam where chrome meets content. On white-against-white this hairline
+   * IS the separation, so it runs one step stronger than an interior rule. */
+  --line-chrome: #e2e5ec;
 
-  /* --- radius ------------------------------------------------------------ */
-  --r-sm: 6px;
-  --r-md: 9px;
-  --r-lg: 13px;
-  --r-xl: 16px;
+  /* --- radius ------------------------------------------------------------
+   * Tightened one step across the scale. The old values were soft enough that
+   * every surface read as the same rounded card, which is the single most
+   * templated shape in current admin UI. Crisper corners, without going sharp.
+   */
+  --r-sm: 5px;
+  --r-md: 6px;
+  --r-lg: 9px;
+  --r-xl: 12px;
   --r-full: 999px;
 
   /* --- elevation ---------------------------------------------------------
@@ -98,6 +116,16 @@
   --t-lg: 16px;
   --t-xl: 20px;
   --t-2xl: 27px;
+
+  /* --- signal ------------------------------------------------------------
+   * THG runs continuously — data arriving, AI coordinating — and the interface
+   * should register that without ever competing with the work. These are the
+   * only motion values in the system, and both are deliberately slower than the
+   * eye tracks: a pulse you notice only after you have been looking at it, and
+   * a shimmer that fires roughly four times a minute.
+   */
+  --motion-pulse: 3.2s;
+  --motion-think: 14s;
 
   --z-drawer: 40;
   --z-scrim: 30;

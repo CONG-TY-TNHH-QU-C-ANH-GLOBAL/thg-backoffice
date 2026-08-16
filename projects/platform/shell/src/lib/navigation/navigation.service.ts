@@ -1,4 +1,4 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { AccessService, CapabilityRegistry, Department, SessionStore } from '@backoffice/domain';
 import { SHELL_NAVIGATION, ShellNavItem } from './navigation.model';
 
@@ -62,5 +62,25 @@ export class NavigationService {
   private forRole(items: readonly ShellNavItem[]): ShellNavItem[] {
     const role = this.session.role();
     return items.filter((item) => !item.roles || item.roles.includes(role));
+  }
+
+  /* --- expansion state ----------------------------------------------------
+   * Held here rather than inside the sidebar so it survives a switch between
+   * the sidebar, the rail and the drawer — those are three presentations of
+   * the same navigation, and collapsing a group should not depend on which one
+   * happens to be mounted.
+   *
+   * Only groups the user has explicitly toggled are recorded; the rest follow
+   * their default.
+   */
+  private readonly overrides = signal<Record<string, boolean>>({});
+
+  isExpanded(groupId: string, fallback: boolean): boolean {
+    return this.overrides()[groupId] ?? fallback;
+  }
+
+  toggle(groupId: string, fallback: boolean): void {
+    const next = !this.isExpanded(groupId, fallback);
+    this.overrides.update((state) => ({ ...state, [groupId]: next }));
   }
 }

@@ -2,6 +2,7 @@
   "name": "@backoffice/shell",
   "version": "0.1.0",
   "peerDependencies": {
+    "@angular/cdk": "^20.2.14",
     "@angular/common": "^20.3.0",
     "@angular/core": "^20.3.0"
   },

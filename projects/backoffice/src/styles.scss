@@ -1,2 +1,10 @@
 /* Design system tokens + base. Everything else is component-scoped. */
 @use 'index' as *;
+
+/*
+ * CDK overlay positioning only — the navigation rail's tooltip renders into a
+ * container appended to <body>, outside every component's style encapsulation,
+ * so this one sheet cannot live in a component. It defines `.cdk-overlay-*`
+ * geometry and nothing else: no colours, no typography, no reset.
+ */
+@import '@angular/cdk/overlay-prebuilt.css';
