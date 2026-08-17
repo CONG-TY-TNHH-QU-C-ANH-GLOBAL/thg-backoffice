@@ -17,7 +17,7 @@ npm run check       # 8 ranh giới kiến trúc
 
 **1. Đơn vị tổ chức là dữ liệu, capability là code.**
 
-```
+```text
 Đơn vị              bản ghi runtime   (fixture hôm nay, API ngày mai — không hardcode)
 Capability          module dùng lại   (đăng ký qua DI)
 Đơn vị × Capability cấu hình
@@ -33,12 +33,22 @@ Mỗi persona được resolve sang một component riêng sau cùng một URL, 
 `WorkspaceHost` quyết định. Một member không có nút "Phân công" để ẩn, vì không
 có bề mặt phân công nào được đăng ký cho persona đó ngay từ đầu.
 
-Đây là khác biệt đáng giữ: ẩn nút là bảo mật bằng CSS. Không đăng ký bề mặt thì
-không có gì để ẩn.
+Đây là khác biệt đáng giữ: ẩn nút bằng CSS thì cái nút vẫn còn đó. Không đăng ký
+bề mặt thì không có gì để ẩn.
+
+Nhưng cả hai đều **không** phải bảo mật — một persona khác chỉ là một lần sửa
+state của client. Bề mặt không được đăng ký chỉ có nghĩa giao diện sạch hơn và
+khó bấm nhầm hơn; endpoint phía sau vẫn phải tự bảo vệ mình.
 
 ---
 
 ## Hai tầng truy cập, cố ý không gộp
+
+> **Đây là logic hiển thị, không phải bảo mật.** Cả hai tầng dưới đây chạy trong
+> trình duyệt và chỉ quyết định *render cái gì*. Chúng không phải authorization,
+> và không bao giờ được coi là ranh giới bảo mật — bất kỳ ai cũng sửa được state
+> của client. Authorization thật là việc của server, và server **chưa** có nó
+> (xem §7 của [`../README.md`](../README.md)).
 
 **L1 — đơn vị.** Người này vào được đơn vị nào? Trả lời bởi `AccessService`.
 
@@ -50,18 +60,25 @@ dashboard dùng chung cho mọi người rồi lọc bằng UI. Chúng ở lại
 riêng, test riêng.
 
 Luật viết dưới dạng **hàm thuần** trong `services/access/rules/` — không
-Angular, không rxjs, có script canh (R3). Backend **chép lại** logic này, không
-import; hai bên tự sở hữu phần thi hành của mình.
+Angular, không rxjs, có script canh (R3). Hàm thuần vì khi backend dựng tầng
+authorization của nó, đây là **đặc tả tham chiếu** dễ đọc và dễ đối chiếu.
+Backend sẽ **viết lại** logic tương đương, không import; hai bên tự sở hữu phần
+thi hành của mình.
 
-`SUPERADMIN | DEPARTMENT_HEAD | MEMBER` là lựa chọn của ứng dụng mẫu, không phải
-bất biến của Foundation. Chúng mô tả **bán kính dữ liệu**, không phải chức danh —
-nhiều chức danh có thể ánh xạ vào cùng một bán kính. Nhãn hiển thị thuộc về dự án.
+Capability cũng có thể khai policy phía frontend — điều hướng, tab, widget nào
+xuất hiện cho persona nào. Cũng vậy: đó là **cấu hình hiển thị**, không phải
+ranh giới bảo mật.
+
+`SUPERADMIN | DEPARTMENT_HEAD | MEMBER` là lựa chọn của ứng dụng mẫu, không
+phải bất biến của Foundation. Chúng mô tả **bán kính dữ liệu**, không phải chức
+danh — nhiều chức danh có thể ánh xạ vào cùng một bán kính. Nhãn hiển thị thuộc
+về dự án.
 
 ---
 
 ## Bố cục
 
-```
+```text
 frontend/
 ├── app/                 khung ứng dụng
 │   ├── app.config.ts        COMPOSITION ROOT — bind repository, đăng ký capability
@@ -91,7 +108,7 @@ dashboard nào đăng ký.
 
 Mỗi feature có bốn tầng:
 
-```
+```text
 features/<tên>/
 ├── domain/        model + quy tắc nghiệp vụ — không Angular, không UI
 ├── data-access/   repository contract + implementation
@@ -144,9 +161,34 @@ Chưa gọi HTTP. Mọi feature nói chuyện với một repository trừu tư�
 Nối vào backend thật = đổi `useClass` sang implementation gọi HTTP. Không
 component nào bị sửa, vì không component nào biết nó đang cầm implementation gì.
 
-Mọi method nhận `user: UserContext` làm tham số đầu tiên — chữ ký thiết kế sẵn
-để server tự scope dữ liệu theo người gọi. Fixture thi hành đúng luật sở hữu mà
-server sẽ thi hành, nên thứ nhìn thấy khi demo là thứ người dùng thật sẽ thấy.
+### `UserContext` — đọc kỹ trước khi nối vào HTTP
+
+Mọi method của repository nhận `user: UserContext` làm tham số đầu tiên. Ý nghĩa
+của tham số đó **khác hẳn nhau** giữa hôm nay và production.
+
+**Hôm nay — fixture, hành vi demo.** Fixture lọc dữ liệu theo `UserContext` để
+bản demo cho thấy mỗi persona nhìn thấy gì. Persona switcher trên topbar tồn tại
+**chỉ vì** fixture `SessionRepository` trả về một danh sách persona; bản
+production trả `[]` và control đó biến mất. Đây là hành vi tham khảo, không phải
+mô hình bảo mật.
+
+**Production — HTTP.** Frontend **không được** tự quyết mình là ai. Cụ thể:
+
+- Không gửi `userId`, `role`, hay `departmentId` lên rồi mong server dùng chúng
+  để phân quyền. Client sửa được mọi giá trị đó.
+- Danh tính người gọi do **server** xác định từ phiên đã xác thực — cookie →
+  `AuthGuard` → `CurrentUser`. Không có đường nào khác.
+- Server là authority. Nếu một câu trả lời phụ thuộc vào "ai đang hỏi", server
+  phải tự trả lời câu đó, không đọc từ payload.
+
+`UserContext` khi ấy là thứ để **render**: hiện tên gì, vẽ menu nào. Không phải
+thứ để chứng minh quyền.
+
+Cũng nên biết: `UserContext` phía frontend có `role` và `departmentId`, còn
+`SessionUser` phía backend hiện chỉ có `id`, `displayName`, `status`. Hai type
+**chưa** khớp nhau, và điều đó đúng — authorization là Core roadmap, chưa active.
+Đừng sửa type nào để "đồng bộ" chúng; khớp nhau là việc của lúc tầng
+authorization được dựng.
 
 Xác thực thuộc backend (`backend/src/core/identity/`). Phiên đăng nhập đi bằng
 cookie `HttpOnly`, nên frontend **không** cầm token và không cất gì vào
@@ -178,7 +220,7 @@ component nào.
 npm run check
 ```
 
-```
+```text
 R1  nền tảng ↛ features · app        R5  hex chỉ ở styles/tokens
 R2  components ↛ từ vựng tổ chức     R6  nền tảng ↛ webfont cụ thể
 R3  access/rules ↛ Angular · rxjs    R7  utils ↛ Angular DI
